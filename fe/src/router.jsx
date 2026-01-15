@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom'
 import Layout from '@/components/layout/Layout'
 import ProtectedRoute from '@/components/ProtectedRoute'
+import { AuthProvider } from '@/contexts/AuthContext'
 
 // Pages
 import LoginPage from '@/pages/LoginPage'
@@ -15,17 +16,30 @@ import ReportsPage from '@/pages/ReportsPage'
 import ProfilePage from '@/pages/ProfilePage'
 import SettingsPage from '@/pages/SettingsPage'
 
+// Root layout wrapper
+const RootLayout = ({ children }) => (
+  <AuthProvider>
+    {children}
+  </AuthProvider>
+)
+
 export const router = createBrowserRouter([
   {
     path: '/login',
-    element: <LoginPage />,
+    element: (
+      <RootLayout>
+        <LoginPage />
+      </RootLayout>
+    ),
   },
   {
     path: '/',
     element: (
-      <ProtectedRoute>
-        <Layout />
-      </ProtectedRoute>
+      <RootLayout>
+        <ProtectedRoute>
+          <Layout />
+        </ProtectedRoute>
+      </RootLayout>
     ),
     children: [
       {
