@@ -2,5 +2,6 @@
   "buildCommand": "cd fe && npm run build",
   "devCommand": "cd fe && npm run dev",
   "installCommand": "cd fe && npm install",
+  "outputDirectory": "fe/dist",
   "framework": "vite"
 }
