@@ -1,7 +1,6 @@
 {
   "buildCommand": "cd fe && npm run build",
   "devCommand": "cd fe && npm run dev",
-  "installCommand": "npm install",
-  "framework": "vite",
-  "rootDirectory": "fe"
+  "installCommand": "cd fe && npm install",
+  "framework": "vite"
 }
