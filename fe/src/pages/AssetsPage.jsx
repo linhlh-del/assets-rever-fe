@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Layout } from '@/components/layout/Layout'
 import { Button } from '@/components/common/Button'
 import { Loading } from '@/components/common/Loading'
 import { useAssets } from '@/hooks/useAssets'
@@ -10,7 +9,8 @@ import { AddAssetModal } from '@/components/assets/AddAssetModal'
 import { EditAssetModal } from '@/components/assets/EditAssetModal'
 import { AssignAssetModal } from '@/components/assets/AssignAssetModal'
 import { ReturnAssetModal } from '@/components/assets/ReturnAssetModal'
-import { useCanCreateAsset } from '@/hooks/usePermission'
+import { useCanCreateAsset, usePermission } from '@/hooks/usePermission'
+import { useAuth } from '@/hooks/useAuth'
 import { Plus } from 'lucide-react'
 
 export default function AssetsPage() {
@@ -34,11 +34,21 @@ export default function AssetsPage() {
 
   // Permissions
   const canCreate = useCanCreateAsset()
+  const { role } = usePermission()
+  const { user } = useAuth()
 
   // Data
   const { data, isLoading } = useAssets(filters)
-  const assets = data?.data || []
-  const total = data?.total || 0
+  let assets = data?.data || []
+  let total = data?.total || 0
+
+  // Filter assets based on user role
+  // Admin & Dev can see all assets
+  // User (normal employee) can only see their own assigned assets
+  if (role === 'user' && user) {
+    assets = assets.filter(asset => asset.assigned_to === user.id || asset.assigned_email === user.email)
+    total = assets.length
+  }
 
   // Pagination
   const handleNextPage = () => {
@@ -52,27 +62,26 @@ export default function AssetsPage() {
   }
 
   return (
-    <Layout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Quản lý tài sản</h1>
-            <p className="text-muted-foreground">
-              Quản lý danh sách tài sản, phân công, thu hồi và bảo trì
-            </p>
-          </div>
-          {canCreate && (
-            <Button
-              variant="primary"
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Thêm tài sản
-            </Button>
-          )}
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">Quản lý tài sản</h1>
+          <p className="text-muted-foreground">
+            Quản lý danh sách tài sản, phân công, thu hồi và bảo trì
+          </p>
         </div>
+        {canCreate && (
+          <Button
+            variant="primary"
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Thêm tài sản
+          </Button>
+        )}
+      </div>
 
         {/* Filters */}
         <AssetFilters filters={filters} onFiltersChange={setFilters} />
@@ -122,7 +131,6 @@ export default function AssetsPage() {
             </div>
           </div>
         )}
-      </div>
 
       {/* Modals */}
       <AddAssetModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} />
@@ -141,6 +149,6 @@ export default function AssetsPage() {
         onClose={() => setReturningAsset(null)}
         asset={returningAsset}
       />
-    </Layout>
+    </div>
   )
 }

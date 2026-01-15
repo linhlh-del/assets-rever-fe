@@ -1,5 +1,6 @@
 import { Badge } from '@/components/common/Badge'
 import { Button } from '@/components/common/Button'
+import { usePermission } from '@/hooks/usePermission'
 import { Edit2, Trash2, Eye, Send, RotateCcw } from 'lucide-react'
 import { ASSET_STATUS_COLORS } from '@/utils/constants'
 
@@ -29,7 +30,10 @@ export function AssetsList({
   onReport,
   onDispose,
 }) {
-  const columns = [
+  const { role } = usePermission()
+  const isRegularUser = role === 'user'
+
+  let columns = [
     {
       header: 'Mã tài sản',
       dataKey: 'asset_code',
@@ -54,25 +58,32 @@ export function AssetsList({
         </Badge>
       ),
     },
-    {
-      header: 'Bộ phận',
-      dataKey: 'current_department',
-      width: '120px',
-    },
-    {
-      header: 'Giá (VNĐ)',
-      dataKey: 'purchase_price',
-      width: '120px',
-      render: (price) => (
-        <span>{price?.toLocaleString('vi-VN') || '-'}</span>
-      ),
-    },
-    {
-      header: 'Hành động',
-      dataKey: 'actions',
-      width: '200px',
-    },
   ]
+
+  // Admin & Dev see full details
+  if (!isRegularUser) {
+    columns.push(
+      {
+        header: 'Bộ phận',
+        dataKey: 'current_department',
+        width: '120px',
+      },
+      {
+        header: 'Giá (VNĐ)',
+        dataKey: 'purchase_price',
+        width: '120px',
+        render: (price) => (
+          <span>{price?.toLocaleString('vi-VN') || '-'}</span>
+        ),
+      }
+    )
+  }
+
+  columns.push({
+    header: 'Hành động',
+    dataKey: 'actions',
+    width: '200px',
+  })
 
   if (isLoading) {
     return (

@@ -40,10 +40,17 @@ export const canUpdateMaintenance = (role) => {
   return role === ROLES.ADMIN_IT
 }
 
+export const canCreateMaintenance = (role) => {
+  return role === ROLES.ADMIN_IT
+}
+
 export const canReportMaintenance = () => {
   return true // All users can report
 }
 
 export const canGenerateReport = (role) => {
   return [ROLES.ADMIN_IT, ROLES.ACCOUNTANT, ROLES.DEV].includes(role)
+}
+export const canCreateInvoice = (role) => {
+  return [ROLES.ADMIN_IT, ROLES.ACCOUNTANT].includes(role)
 }

@@ -4,6 +4,8 @@ import CustomizableChart from '@/components/dashboard/CustomizableChart'
 import ExpiringWarrantyWidget from '@/components/dashboard/ExpiringWarrantyWidget'
 import BrokenAssetsWidget from '@/components/dashboard/BrokenAssetsWidget'
 import { useDashboard } from '@/hooks/useDashboard'
+import { usePermission } from '@/hooks/usePermission'
+import { useAuth } from '@/hooks/useAuth'
 
 const DashboardPage = () => {
   const {
@@ -14,62 +16,84 @@ const DashboardPage = () => {
     updateChartPreference,
     isLoading,
   } = useDashboard()
+  const { role } = usePermission()
+  const { user } = useAuth()
+
+  // For regular users, show only their personal stats
+  const isRegularUser = role === 'user'
+  const displayStats = isRegularUser ? {
+    totalAssets: stats.userAssets || 0,
+    inUseAssets: stats.inUseAssets || 0,
+    availableAssets: 0,
+    maintenanceAssets: 0,
+    brokenAssets: 0,
+    disposedAssets: 0,
+  } : stats
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-gray-600 mt-2">Tổng quan quản lý tài sản IT</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-50">
+          {isRegularUser ? `Tài Sản Của ${user?.user_metadata?.full_name || 'Bạn'}` : 'Dashboard'}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-2">
+          {isRegularUser ? 'Quản lý tài sản cá nhân' : 'Tổng quan quản lý tài sản IT'}
+        </p>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         <StatCard
           title="Tổng Tài Sản"
-          value={stats.totalAssets}
+          value={displayStats.totalAssets}
           icon={Package}
           color="primary"
           loading={isLoading}
         />
         <StatCard
           title="Đang Sử Dụng"
-          value={stats.inUseAssets}
+          value={displayStats.inUseAssets}
           icon={CheckCircle}
           color="blue"
           loading={isLoading}
         />
-        <StatCard
-          title="Có Sẵn"
-          value={stats.availableAssets}
-          icon={Package}
-          color="green"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Bảo Trì"
-          value={stats.maintenanceAssets}
-          icon={Clock}
-          color="yellow"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Hư Hỏng"
-          value={stats.brokenAssets}
-          icon={AlertCircle}
-          color="red"
-          loading={isLoading}
-        />
-        <StatCard
-          title="Thanh Lý"
-          value={stats.disposedAssets}
-          icon={Trash2}
-          color="red"
-          loading={isLoading}
-        />
+        {!isRegularUser && (
+          <>
+            <StatCard
+              title="Có Sẵn"
+              value={displayStats.availableAssets}
+              icon={Package}
+              color="green"
+              loading={isLoading}
+            />
+            <StatCard
+              title="Bảo Trì"
+              value={displayStats.maintenanceAssets}
+              icon={Clock}
+              color="yellow"
+              loading={isLoading}
+            />
+            <StatCard
+              title="Hư Hỏng"
+              value={displayStats.brokenAssets}
+              icon={AlertCircle}
+              color="red"
+              loading={isLoading}
+            />
+            <StatCard
+              title="Thanh Lý"
+              value={displayStats.disposedAssets}
+              icon={Trash2}
+              color="red"
+              loading={isLoading}
+            />
+          </>
+        )}
       </div>
 
-      {/* Charts Grid */}
+      {/* Charts Grid - Only for Admin/Dev */}
+      {!isRegularUser && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <CustomizableChart
           title="Tài Sản Theo Phòng Ban"
@@ -107,8 +131,10 @@ const DashboardPage = () => {
           loading={isLoading}
         />
       </div>
+      )}
 
-      {/* Widgets */}
+      {/* Widgets - Only for Admin/Dev */}
+      {!isRegularUser && (
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <ExpiringWarrantyWidget
           data={widgets.expiringWarranty}
@@ -120,6 +146,7 @@ const DashboardPage = () => {
           loading={isLoading}
         />
       </div>
+      )}
     </div>
   )
 }

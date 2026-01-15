@@ -4,11 +4,12 @@ import { Button } from '@/components/common/Button'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Badge } from '@/components/common/Badge'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/contexts/ThemeContext'
 import { Moon, Sun, LogOut, Lock, Bell, Eye } from 'lucide-react'
 
 export default function SettingsPage() {
   const { user, logout } = useAuth()
-  const [theme, setTheme] = useState('light')
+  const { theme, setTheme } = useTheme()
   const [settings, setSettings] = useState({
     email_notifications: true,
     system_alerts: true,

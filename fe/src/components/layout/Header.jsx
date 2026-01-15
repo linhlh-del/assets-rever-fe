@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Bell, Settings, LogOut, User, Menu } from 'lucide-react'
 import { useState } from 'react'
 import { useResponsive } from '@/hooks/useResponsive'
+import RedLogo from '@/assets/images/Rever-Redlogo.png'
 
 const Header = ({ onMenuClick }) => {
   const { user, signOut } = useAuth()
@@ -25,7 +26,7 @@ const Header = ({ onMenuClick }) => {
             {isMobile && (
               <button
                 onClick={onMenuClick}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                className="p-2 text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
               </button>
@@ -33,9 +34,9 @@ const Header = ({ onMenuClick }) => {
             
             {/* Logo */}
             <img 
-              src="/logo.png" 
+              src={RedLogo}
               alt="Rever" 
-              className="h-6 sm:h-8 w-auto"
+              className="h-12 sm:h-12 w-auto"
             />
             
             {/* Title - Hidden on mobile */}
