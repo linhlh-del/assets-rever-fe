@@ -1,55 +1,66 @@
-import { cn } from '@/utils/cn'
+import { cn } from "@/utils/cn";
+import { forwardRef } from "react";
 
-const Select = ({ 
-  label,
-  options = [],
-  value,
-  onChange,
-  error,
-  helperText,
-  className,
-  required,
-  disabled,
-  ...props 
-}) => {
-  return (
-    <div className="w-full">
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
-        </label>
-      )}
-      <select
-        value={value}
-        onChange={onChange}
-        disabled={disabled}
-        className={cn(
-          'block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm',
-          'placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500',
-          'disabled:bg-gray-100 disabled:cursor-not-allowed',
-          error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
-          className
+const Select = forwardRef(
+  (
+    {
+      label,
+      options = [],
+      value,
+      onChange,
+      error,
+      helperText,
+      className,
+      required,
+      disabled,
+      children,
+      ...props
+    },
+    ref
+  ) => {
+    return (
+      <div className="w-full">
+        {label && (
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {label}
+            {required && <span className="text-red-500 ml-1">*</span>}
+          </label>
         )}
-        {...props}
-      >
-        <option value="">-- Chọn --</option>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
-      </select>
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-      )}
-    </div>
-  )
-}
+        <select
+          ref={ref}
+          value={value}
+          onChange={onChange}
+          disabled={disabled}
+          className={cn(
+            "block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm",
+            "placeholder-gray-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500",
+            "disabled:bg-gray-100 disabled:cursor-not-allowed",
+            error && "border-red-500 focus:border-red-500 focus:ring-red-500",
+            className
+          )}
+          {...props}
+        >
+          {children || (
+            <>
+              <option value="">-- Chọn --</option>
+              {options.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </>
+          )}
+        </select>
+        {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+        {helperText && !error && (
+          <p className="mt-1 text-sm text-gray-500">{helperText}</p>
+        )}
+      </div>
+    );
+  }
+);
 
-export { Select }
-export default Select
+Select.displayName = "Select";
 
+export { Select };
+export default Select;

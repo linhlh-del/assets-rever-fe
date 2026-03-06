@@ -1,31 +1,38 @@
-import { Input } from '@/components/common/Input'
-import { Select } from '@/components/common/Select'
-import { Button } from '@/components/common/Button'
-import { Search, X } from 'lucide-react'
-import { DEPARTMENTS, ROLES } from '@/utils/constants'
+import { Input } from "@/components/common/Input";
+import { Select } from "@/components/common/Select";
+import { Button } from "@/components/common/Button";
+import { Search, X } from "lucide-react";
+import { DEPARTMENTS, ROLES } from "@/utils/constants";
 
 export function UserFilters({ filters, onFiltersChange }) {
   const handleSearchChange = (value) => {
-    onFiltersChange({ ...filters, search: value, page: 1 })
-  }
+    onFiltersChange({ ...filters, search: value, page: 1 });
+  };
 
   const handleDepartmentChange = (value) => {
-    onFiltersChange({ ...filters, department: value || null, page: 1 })
-  }
+    onFiltersChange({ ...filters, department: value || null, page: 1 });
+  };
 
   const handleRoleChange = (value) => {
-    onFiltersChange({ ...filters, role: value || null, page: 1 })
-  }
+    onFiltersChange({ ...filters, role: value || null, page: 1 });
+  };
 
   const handleStatusChange = (value) => {
-    onFiltersChange({ ...filters, status: value || null, page: 1 })
-  }
+    onFiltersChange({ ...filters, status: value || null, page: 1 });
+  };
 
   const handleReset = () => {
-    onFiltersChange({ search: '', department: null, role: null, status: null, page: 1 })
-  }
+    onFiltersChange({
+      search: "",
+      department: null,
+      role: null,
+      status: null,
+      page: 1,
+    });
+  };
 
-  const hasActiveFilters = filters.search || filters.department || filters.role || filters.status
+  const hasActiveFilters =
+    filters.search || filters.department || filters.role || filters.status;
 
   return (
     <div className="space-y-4">
@@ -34,7 +41,7 @@ export function UserFilters({ filters, onFiltersChange }) {
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           placeholder="Tìm theo tên, email, hoặc mã nhân viên..."
-          value={filters.search || ''}
+          value={filters.search || ""}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="pl-10"
         />
@@ -44,29 +51,33 @@ export function UserFilters({ filters, onFiltersChange }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {/* Department Filter */}
         <Select
-          value={filters.department || ''}
+          value={filters.department || ""}
           onChange={(e) => handleDepartmentChange(e.target.value)}
         >
           <option value="">Tất cả bộ phận</option>
-          {DEPARTMENTS.map(dept => (
-            <option key={dept} value={dept}>{dept}</option>
+          {DEPARTMENTS.map((dept) => (
+            <option key={dept.value} value={dept.value}>
+              {dept.label}
+            </option>
           ))}
         </Select>
 
         {/* Role Filter */}
         <Select
-          value={filters.role || ''}
+          value={filters.role || ""}
           onChange={(e) => handleRoleChange(e.target.value)}
         >
           <option value="">Tất cả vai trò</option>
           {Object.entries(ROLES).map(([key, label]) => (
-            <option key={key} value={key}>{label}</option>
+            <option key={key} value={key}>
+              {label}
+            </option>
           ))}
         </Select>
 
         {/* Status Filter */}
         <Select
-          value={filters.status || ''}
+          value={filters.status || ""}
           onChange={(e) => handleStatusChange(e.target.value)}
         >
           <option value="">Tất cả trạng thái</option>
@@ -89,5 +100,5 @@ export function UserFilters({ filters, onFiltersChange }) {
         )}
       </div>
     </div>
-  )
+  );
 }

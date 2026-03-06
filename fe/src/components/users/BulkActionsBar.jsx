@@ -1,13 +1,13 @@
-import { Button } from '@/components/common/Button'
-import { Select } from '@/components/common/Select'
-import { Trash2, Download } from 'lucide-react'
-import { useBulkUpdateUsers } from '@/hooks/useUsers'
-import { DEPARTMENTS } from '@/utils/constants'
+import { Button } from "@/components/common/Button";
+import { Select } from "@/components/common/Select";
+import { Trash2, Download } from "lucide-react";
+import { useBulkUpdateUsers } from "@/hooks/useUsers";
+import { DEPARTMENTS } from "@/utils/constants";
 
 export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
-  const { mutate: bulkUpdate, isPending } = useBulkUpdateUsers()
+  const { mutate: bulkUpdate, isPending } = useBulkUpdateUsers();
 
-  if (selectedUsers.length === 0) return null
+  if (selectedUsers.length === 0) return null;
 
   const handleBulkDepartmentChange = (department) => {
     bulkUpdate(
@@ -17,11 +17,11 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
       },
       {
         onSuccess: () => {
-          onSelectionChange([])
+          onSelectionChange([]);
         },
       }
-    )
-  }
+    );
+  };
 
   const handleBulkStatusChange = (status) => {
     bulkUpdate(
@@ -31,27 +31,29 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
       },
       {
         onSuccess: () => {
-          onSelectionChange([])
+          onSelectionChange([]);
         },
       }
-    )
-  }
+    );
+  };
 
   const handleBulkDelete = () => {
-    if (window.confirm(`Bạn có chắc muốn xóa ${selectedUsers.length} nhân viên?`)) {
+    if (
+      window.confirm(`Bạn có chắc muốn xóa ${selectedUsers.length} nhân viên?`)
+    ) {
       bulkUpdate(
         {
           employeeIds: selectedUsers,
-          data: { status: 'resigned' },
+          data: { status: "resigned" },
         },
         {
           onSuccess: () => {
-            onSelectionChange([])
+            onSelectionChange([]);
           },
         }
-      )
+      );
     }
-  }
+  };
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-3 flex-wrap">
@@ -67,8 +69,10 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
         className="text-sm w-40"
       >
         <option value="">Thay đổi bộ phận...</option>
-        {DEPARTMENTS.map(dept => (
-          <option key={dept} value={dept}>{dept}</option>
+        {DEPARTMENTS.map((dept) => (
+          <option key={dept.value} value={dept.value}>
+            {dept.label}
+          </option>
         ))}
       </Select>
 
@@ -121,5 +125,5 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
         </Button>
       </div>
     </div>
-  )
+  );
 }

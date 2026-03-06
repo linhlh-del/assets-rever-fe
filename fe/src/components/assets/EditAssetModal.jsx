@@ -1,28 +1,27 @@
-import { Modal } from '@/components/common/Modal'
-import { AssetForm } from './AssetForm'
-import { useUpdateAsset } from '@/hooks/useAssets'
+// components/assets/EditAssetModal.jsx
+import { Modal } from "@/components/common/Modal";
+import { AssetForm } from "./AssetForm";
+import { useUpdateAsset } from "@/hooks/useAssets";
 
 export function EditAssetModal({ isOpen, onClose, asset }) {
-  const { mutate: updateAsset, isPending } = useUpdateAsset()
+  const { mutate: updateAsset, isPending } = useUpdateAsset();
 
-  if (!asset) return null
+  if (!asset) return null;
 
   const handleSubmit = (data) => {
     updateAsset(
       {
-        assetCode: asset.asset_code,
+        assetId: asset.id, // ✅ FIX 3: dùng asset.id (UUID) thay vì asset.asset_code
         data: {
           ...data,
           updated_at: new Date().toISOString(),
         },
       },
       {
-        onSuccess: () => {
-          onClose()
-        },
-      }
-    )
-  }
+        onSuccess: () => onClose(),
+      },
+    );
+  };
 
   return (
     <Modal
@@ -38,5 +37,5 @@ export function EditAssetModal({ isOpen, onClose, asset }) {
         isEditing={true}
       />
     </Modal>
-  )
+  );
 }

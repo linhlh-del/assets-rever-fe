@@ -1,31 +1,37 @@
-import { createBrowserRouter } from 'react-router-dom'
-import Layout from '@/components/layout/Layout'
-import ProtectedRoute from '@/components/ProtectedRoute'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { createBrowserRouter } from "react-router-dom";
+import { lazy, Suspense } from "react";
+import Layout from "@/components/layout/Layout";
+import ProtectedRoute from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/contexts/AuthContext";
+import Loading from "@/components/common/Loading";
 
-// Pages
-import LoginPage from '@/pages/LoginPage'
-import DashboardPage from '@/pages/DashboardPage'
-import UsersPage from '@/pages/UsersPage'
-import AssetsPage from '@/pages/AssetsPage'
-import AssetDetailPage from '@/pages/AssetDetailPage'
-import InvoicesPage from '@/pages/InvoicesPage'
-import MaintenancePage from '@/pages/MaintenancePage'
-import SlipsPage from '@/pages/SlipsPage'
-import ReportsPage from '@/pages/ReportsPage'
-import ProfilePage from '@/pages/ProfilePage'
-import SettingsPage from '@/pages/SettingsPage'
+// Lazy load pages
+const LoginPage = lazy(() => import("@/pages/LoginPage"));
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const UsersPage = lazy(() => import("@/pages/UsersPage"));
+const AssetsPage = lazy(() => import("@/pages/AssetsPage"));
+const AssetDetailPage = lazy(() => import("@/pages/AssetDetailPage"));
+const InvoicesPage = lazy(() => import("@/pages/InvoicesPage"));
+const MaintenancePage = lazy(() => import("@/pages/MaintenancePage"));
+const SlipsPage = lazy(() => import("@/pages/SlipsPage"));
+const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
+const ProfilePage = lazy(() => import("@/pages/ProfilePage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const AssetHistoryPage = lazy(() => import("@/pages/AssetHistoryPage"));
+const UserHistoryPage = lazy(() => import("@/pages/UserHistoryPage"));
 
 // Root layout wrapper
 const RootLayout = ({ children }) => (
   <AuthProvider>
-    {children}
+    <Suspense fallback={<Loading fullScreen text="Đang tải..." />}>
+      {children}
+    </Suspense>
   </AuthProvider>
-)
+);
 
 export const router = createBrowserRouter([
   {
-    path: '/login',
+    path: "/login",
     element: (
       <RootLayout>
         <LoginPage />
@@ -33,7 +39,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/',
+    path: "/",
     element: (
       <RootLayout>
         <ProtectedRoute>
@@ -47,65 +53,73 @@ export const router = createBrowserRouter([
         element: <DashboardPage />,
       },
       {
-        path: 'dashboard',
+        path: "dashboard",
         element: <DashboardPage />,
       },
       {
-        path: 'users',
+        path: "users",
         element: (
-          <ProtectedRoute roles={['admin_it', 'accountant', 'dev']}>
+          <ProtectedRoute roles={["admin_it", "accountant", "dev"]}>
             <UsersPage />
           </ProtectedRoute>
         ),
       },
       {
-        path: 'assets',
+        path: "assets",
         element: <AssetsPage />,
       },
       {
-        path: 'assets/:assetCode',
+        path: "assets/:assetId",
         element: <AssetDetailPage />,
       },
       {
-        path: 'invoices',
+        path: "invoices",
         element: (
-          <ProtectedRoute roles={['admin_it', 'accountant']}>
+          <ProtectedRoute roles={["admin_it", "accountant"]}>
             <InvoicesPage />
           </ProtectedRoute>
         ),
       },
       {
-        path: 'maintenance',
+        path: "maintenance",
         element: <MaintenancePage />,
       },
       {
-        path: 'slips',
+        path: "slips",
         element: <SlipsPage />,
       },
       {
-        path: 'reports',
+        path: "asset-history",
+        element: <AssetHistoryPage />,
+      },
+      {
+        path: "user-history",
+        element: <UserHistoryPage />,
+      },
+      {
+        path: "reports",
         element: (
-          <ProtectedRoute roles={['admin_it', 'accountant', 'dev']}>
+          <ProtectedRoute roles={["admin_it", "accountant", "dev"]}>
             <ReportsPage />
           </ProtectedRoute>
         ),
       },
       {
-        path: 'profile',
+        path: "profile",
         element: <ProfilePage />,
       },
       {
-        path: 'settings',
+        path: "settings",
         element: <SettingsPage />,
       },
     ],
   },
   {
-    path: '/unauthorized',
+    path: "/unauthorized",
     element: <div className="text-center p-8">401 - Unauthorized</div>,
   },
   {
-    path: '*',
+    path: "*",
     element: <div className="text-center p-8">404 - Page Not Found</div>,
   },
-])
+]);

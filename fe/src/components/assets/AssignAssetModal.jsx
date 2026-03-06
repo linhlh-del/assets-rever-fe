@@ -1,73 +1,56 @@
-import { useState } from 'react'
-import { Modal } from '@/components/common/Modal'
-import { Button } from '@/components/common/Button'
-import { Input } from '@/components/common/Input'
-import { Select } from '@/components/common/Select'
-import { useAssignAsset } from '@/hooks/useAssets'
-import { useUsers } from '@/hooks/useUsers'
-import { generateAssetTransferSlip } from '@/utils/pdfGenerators'
-import { DEPARTMENTS } from '@/utils/constants'
+// components/assets/AssignAssetModal.jsx
+import { useState } from "react";
+import { Modal } from "@/components/common/Modal";
+import { Button } from "@/components/common/Button";
+import { Select } from "@/components/common/Select";
+import { useAssignAsset } from "@/hooks/useAssets";
+import { useUsers } from "@/hooks/useUsers";
+import { DEPARTMENTS } from "@/utils/constants";
 
 export function AssignAssetModal({ isOpen, onClose, asset }) {
-  const [selectedUser, setSelectedUser] = useState('')
-  const [selectedDepartment, setSelectedDepartment] = useState('')
-  const [notes, setNotes] = useState('')
+  const [selectedUser, setSelectedUser] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [notes, setNotes] = useState("");
 
-  const { mutate: assignAsset, isPending } = useAssignAsset()
-  const { data: usersData } = useUsers({ limit: 1000 })
-  const users = usersData?.data || []
+  const { mutate: assignAsset, isPending } = useAssignAsset();
+  const { data: usersData } = useUsers({ limit: 1000 });
 
-  if (!asset) return null
+  // ✅ useUsers có thể trả về nhiều format khác nhau — handle hết
+  const users =
+    usersData?.users ||
+    usersData?.data?.users ||
+    usersData?.data ||
+    usersData ||
+    [];
+
+  if (!asset) return null;
 
   const handleAssign = async () => {
-    const user = users.find(u => u.employee_code === selectedUser)
-    if (!user) return
+    if (!selectedUser) return;
 
-    // Generate PDF
-    try {
-      const doc = await generateAssetTransferSlip({
-        slipNumber: `${Date.now()}`,
-        assetCode: asset.asset_code,
-        assetName: asset.product_name,
-        serialNumber: asset.serial_number || '-',
-        category: asset.category,
-        fromUserCode: '-',
-        fromUserName: 'Kho',
-        toUserCode: user.employee_code,
-        toUserName: user.full_name,
-        fromDepartment: 'Kho',
-        toDepartment: selectedDepartment,
-        transferredDate: new Date().toISOString(),
-        notes,
-      })
-
-      // Download PDF
-      doc.save(`phieu-ban-giao-${asset.asset_code}.pdf`)
-    } catch (err) {
-      console.error('Error generating PDF:', err)
-    }
-
-    // Assign asset
+    // ✅ FIX: dùng asset.id (UUID) thay vì asset.asset_code
     assignAsset(
       {
-        assetCode: asset.asset_code,
-        data: {
-          userEmployeeCode: selectedUser,
-          department: selectedDepartment,
-        },
+        assetId: asset.id,
+        employeeCode: selectedUser,
       },
       {
         onSuccess: () => {
-          setSelectedUser('')
-          setSelectedDepartment('')
-          setNotes('')
-          onClose()
+          setSelectedUser("");
+          setSelectedDepartment("");
+          setNotes("");
+          onClose();
         },
-      }
-    )
-  }
+        onError: (error) => {
+          console.error("❌ Assign error:", error.message);
+        },
+      },
+    );
+  };
 
-  const selectedUserData = users.find(u => u.employee_code === selectedUser)
+  const selectedUserData = Array.isArray(users)
+    ? users.find((u) => u.employee_code === selectedUser)
+    : null;
 
   return (
     <Modal
@@ -80,9 +63,15 @@ export function AssignAssetModal({ isOpen, onClose, asset }) {
       <div className="space-y-4">
         {/* Asset Info */}
         <div className="bg-muted p-3 rounded-lg">
-          <p className="text-sm"><strong>Mã:</strong> {asset.asset_code}</p>
-          <p className="text-sm"><strong>Tên:</strong> {asset.product_name}</p>
-          <p className="text-sm"><strong>Serial:</strong> {asset.serial_number || '-'}</p>
+          <p className="text-sm">
+            <strong>Mã:</strong> {asset.asset_code}
+          </p>
+          <p className="text-sm">
+            <strong>Tên:</strong> {asset.product_name}
+          </p>
+          <p className="text-sm">
+            <strong>Serial:</strong> {asset.serial_number || "-"}
+          </p>
         </div>
 
         {/* Select User */}
@@ -94,36 +83,26 @@ export function AssignAssetModal({ isOpen, onClose, asset }) {
             disabled={isPending}
           >
             <option value="">-- Chọn nhân viên --</option>
-            {users.map(user => (
-              <option key={user.employee_code} value={user.employee_code}>
-                {user.full_name} ({user.employee_code})
-              </option>
-            ))}
+            {Array.isArray(users) &&
+              users.map((user) => (
+                <option key={user.employee_code} value={user.employee_code}>
+                  {user.full_name} ({user.employee_code})
+                </option>
+              ))}
           </Select>
         </div>
 
         {/* User Info */}
         {selectedUserData && (
           <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm">
-            <p><strong>Email:</strong> {selectedUserData.email}</p>
-            <p><strong>Bộ phận hiện tại:</strong> {selectedUserData.department}</p>
+            <p>
+              <strong>Email:</strong> {selectedUserData.email}
+            </p>
+            <p>
+              <strong>Bộ phận:</strong> {selectedUserData.department}
+            </p>
           </div>
         )}
-
-        {/* Select Department */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Bộ phận *</label>
-          <Select
-            value={selectedDepartment}
-            onChange={(e) => setSelectedDepartment(e.target.value)}
-            disabled={isPending}
-          >
-            <option value="">-- Chọn bộ phận --</option>
-            {DEPARTMENTS.map(dept => (
-              <option key={dept} value={dept}>{dept}</option>
-            ))}
-          </Select>
-        </div>
 
         {/* Notes */}
         <div>
@@ -153,16 +132,12 @@ export function AssignAssetModal({ isOpen, onClose, asset }) {
             className="flex-1"
             loading={isPending}
             onClick={handleAssign}
-            disabled={!selectedUser || !selectedDepartment}
+            disabled={!selectedUser || isPending}
           >
             Phân công
           </Button>
         </div>
-
-        <p className="text-xs text-muted-foreground text-center">
-          Phiếu bàn giao sẽ được tạo và tải về
-        </p>
       </div>
     </Modal>
-  )
+  );
 }
