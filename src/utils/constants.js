@@ -65,9 +65,17 @@ export const ASSET_CATEGORIES = [
   { value: "Other", label: "Khác" },
 ];
 
-// DEPARTMENTS không còn dùng hardcode — lấy từ API /api/departments
-// Giữ lại làm fallback khi API chưa load xong
-export const DEPARTMENTS_FALLBACK = [];
+// DEPARTMENTS — giữ lại để không break các file đang import
+// TODO P2: thay bằng gọi API /api/departments (dữ liệu thật từ VPS)
+export const DEPARTMENTS = [
+  { value: "Sales", label: "Sales" },
+  { value: "Marketing", label: "Marketing" },
+  { value: "IT", label: "IT" },
+  { value: "Finance", label: "Finance" },
+  { value: "HR", label: "HR" },
+  { value: "Project Management", label: "Project Management" },
+  { value: "General", label: "General" },
+];
 
 export const MAINTENANCE_STATUS = {
   PENDING: "pending",
