@@ -1,23 +1,20 @@
-import { Modal } from '@/components/common/Modal'
-import { UserForm } from './UserForm'
-import { useCreateUser } from '@/hooks/useUsers'
+import { Modal } from "@/components/common/Modal";
+import { UserForm } from "./UserForm";
+import { useCreateUser } from "@/hooks/useUsers";
 
 export function AddUserModal({ isOpen, onClose }) {
-  const { mutate: createUser, isPending } = useCreateUser()
+  const { mutate: createUser, isPending } = useCreateUser();
 
   const handleSubmit = (data) => {
     createUser(
-      {
-        ...data,
-        created_at: new Date().toISOString(),
-      },
+      data, // bỏ created_at — DB tự set DEFAULT now()
       {
         onSuccess: () => {
-          onClose()
+          onClose();
         },
-      }
-    )
-  }
+      },
+    );
+  };
 
   return (
     <Modal
@@ -28,5 +25,5 @@ export function AddUserModal({ isOpen, onClose }) {
     >
       <UserForm onSubmit={handleSubmit} isLoading={isPending} />
     </Modal>
-  )
+  );
 }

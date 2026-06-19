@@ -26,7 +26,7 @@ export default function UsersPage() {
     search: "",
     department: null,
     role: null,
-    status: null,
+    status: "active",
     page: 1,
     limit: 20,
   });

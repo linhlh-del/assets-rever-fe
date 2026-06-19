@@ -2,38 +2,22 @@ import { Button } from "@/components/common/Button";
 import { Select } from "@/components/common/Select";
 import { Trash2, Download } from "lucide-react";
 import { useBulkUpdateUsers } from "@/hooks/useUsers";
-import { DEPARTMENTS } from "@/utils/constants";
 
 export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
   const { mutate: bulkUpdate, isPending } = useBulkUpdateUsers();
 
   if (selectedUsers.length === 0) return null;
 
-  const handleBulkDepartmentChange = (department) => {
-    bulkUpdate(
-      {
-        employeeIds: selectedUsers,
-        data: { department },
-      },
-      {
-        onSuccess: () => {
-          onSelectionChange([]);
-        },
-      }
-    );
-  };
-
   const handleBulkStatusChange = (status) => {
+    if (!status) return;
     bulkUpdate(
       {
         employeeIds: selectedUsers,
         data: { status },
       },
       {
-        onSuccess: () => {
-          onSelectionChange([]);
-        },
-      }
+        onSuccess: () => onSelectionChange([]),
+      },
     );
   };
 
@@ -47,10 +31,8 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
           data: { status: "resigned" },
         },
         {
-          onSuccess: () => {
-            onSelectionChange([]);
-          },
-        }
+          onSuccess: () => onSelectionChange([]),
+        },
       );
     }
   };
@@ -61,27 +43,12 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
         Đã chọn {selectedUsers.length} nhân viên
       </span>
 
-      {/* Department bulk action */}
-      <Select
-        value=""
-        onChange={(e) => handleBulkDepartmentChange(e.target.value)}
-        disabled={isPending}
-        className="text-sm w-40"
-      >
-        <option value="">Thay đổi bộ phận...</option>
-        {DEPARTMENTS.map((dept) => (
-          <option key={dept.value} value={dept.value}>
-            {dept.label}
-          </option>
-        ))}
-      </Select>
-
       {/* Status bulk action */}
       <Select
         value=""
         onChange={(e) => handleBulkStatusChange(e.target.value)}
         disabled={isPending}
-        className="text-sm w-40"
+        className="text-sm w-44"
       >
         <option value="">Thay đổi trạng thái...</option>
         <option value="active">Đang làm việc</option>
@@ -90,19 +57,17 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
       </Select>
 
       <div className="ml-auto flex gap-2">
-        {/* Export button */}
         <Button
           variant="ghost"
           size="sm"
           onClick={() => onExport(selectedUsers)}
-          className="flex items-center gap-2"
           disabled={isPending}
+          className="flex items-center gap-2"
         >
           <Download className="w-4 h-4" />
           Xuất
         </Button>
 
-        {/* Delete button */}
         <Button
           variant="danger"
           size="sm"
@@ -114,7 +79,6 @@ export function BulkActionsBar({ selectedUsers, onSelectionChange, onExport }) {
           Xóa
         </Button>
 
-        {/* Clear selection */}
         <Button
           variant="ghost"
           size="sm"

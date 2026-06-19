@@ -48,34 +48,26 @@ export const ASSET_STATUS_COLORS = {
   [ASSET_STATUS.DISPOSED]: "bg-gray-100 text-gray-800",
 };
 
-// 13 categories khớp CHECK constraint VPS (dùng chung 1 nguồn duy nhất)
+// 13 categories — lowercase khớp CHECK constraint VPS
 export const ASSET_CATEGORIES = [
-  { value: "Laptop", label: "Laptop" },
-  { value: "Desktop", label: "Desktop" },
-  { value: "Monitor", label: "Màn hình" },
-  { value: "Keyboard", label: "Bàn phím" },
-  { value: "Mouse", label: "Chuột" },
-  { value: "Headset", label: "Tai nghe" },
-  { value: "Webcam", label: "Webcam" },
-  { value: "Printer", label: "Máy in" },
-  { value: "Scanner", label: "Máy quét" },
-  { value: "Projector", label: "Máy chiếu" },
-  { value: "Phone", label: "Điện thoại" },
-  { value: "Tablet", label: "Máy tính bảng" },
-  { value: "Other", label: "Khác" },
+  { value: "laptop", label: "Laptop" },
+  { value: "desktop", label: "Desktop" },
+  { value: "monitor", label: "Màn hình" },
+  { value: "keyboard", label: "Bàn phím" },
+  { value: "mouse", label: "Chuột" },
+  { value: "headphone", label: "Tai nghe" },
+  { value: "webcam", label: "Webcam" },
+  { value: "phone", label: "Điện thoại" },
+  { value: "tablet", label: "Máy tính bảng" },
+  { value: "printer", label: "Máy in" },
+  { value: "network", label: "Thiết bị mạng" },
+  { value: "server", label: "Server" },
+  { value: "other", label: "Khác" },
 ];
 
-// DEPARTMENTS — giữ lại để không break các file đang import
-// TODO P2: thay bằng gọi API /api/departments (dữ liệu thật từ VPS)
-export const DEPARTMENTS = [
-  { value: "Sales", label: "Sales" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "IT", label: "IT" },
-  { value: "Finance", label: "Finance" },
-  { value: "HR", label: "HR" },
-  { value: "Project Management", label: "Project Management" },
-  { value: "General", label: "General" },
-];
+// Giữ lại để không break các file đang import
+// Đã được thay thế bằng useDepartments() hook gọi API thật
+export const DEPARTMENTS = [];
 
 export const MAINTENANCE_STATUS = {
   PENDING: "pending",

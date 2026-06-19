@@ -121,6 +121,13 @@ export const apiClient = {
         const errorData = await response.json().catch(() => ({}));
         console.error(`❌ ${response.status}:`, errorData);
 
+        if (errorData?.errors) {
+          console.error(
+            "🔍 Validation errors detail:",
+            JSON.stringify(errorData.errors, null, 2),
+          );
+        }
+
         throw new Error(
           errorData.message ||
             `HTTP ${response.status}: ${response.statusText}`,
