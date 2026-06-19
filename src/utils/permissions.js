@@ -1,59 +1,66 @@
 import { ROLES } from "./constants";
 
+// ─── Quyền quản lý User ───────────────────────────────────────────────────────
 export const canCreateUser = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canEditUser = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canDeleteUser = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return role === ROLES.SUPER_ADMIN;
 };
 
+// ─── Quyền quản lý Asset ─────────────────────────────────────────────────────
 export const canCreateAsset = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canEditAsset = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canAssignAsset = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canDisposeAsset = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canViewAssetPrice = (role) => {
-  return [ROLES.ADMIN_IT, ROLES.ACCOUNTANT].includes(role);
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN, ROLES.MANAGER].includes(role);
 };
 
+// ─── Quyền quản lý Invoice ───────────────────────────────────────────────────
 export const canManageInvoice = (role) => {
-  return [ROLES.ADMIN_IT, ROLES.ACCOUNTANT].includes(role);
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN, ROLES.MANAGER].includes(role);
+};
+
+export const canCreateInvoice = (role) => {
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN, ROLES.MANAGER].includes(role);
+};
+
+// ─── Quyền quản lý Maintenance ───────────────────────────────────────────────
+export const canCreateMaintenance = (role) => {
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canUpdateMaintenance = (role) => {
-  return role === ROLES.ADMIN_IT;
-};
-
-export const canCreateMaintenance = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
 export const canReportMaintenance = () => {
-  return true; // All users can report
+  return true; // Tất cả user đều có thể báo cáo sự cố
 };
 
+// ─── Quyền Report & Slip ─────────────────────────────────────────────────────
 export const canGenerateReport = (role) => {
-  return [ROLES.ADMIN_IT, ROLES.ACCOUNTANT, ROLES.DEV].includes(role);
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN, ROLES.MANAGER].includes(role);
 };
-export const canCreateInvoice = (role) => {
-  return [ROLES.ADMIN_IT, ROLES.ACCOUNTANT].includes(role);
-};
+
 export const canCreateSlip = (role) => {
-  return role === ROLES.ADMIN_IT;
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };

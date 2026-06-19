@@ -20,7 +20,7 @@ const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const AssetHistoryPage = lazy(() => import("@/pages/AssetHistoryPage"));
 const UserHistoryPage = lazy(() => import("@/pages/UserHistoryPage"));
 
-// Root layout wrapper
+// Root layout — AuthProvider mount 1 lần duy nhất ở đây
 const RootLayout = ({ children }) => (
   <AuthProvider>
     <Suspense fallback={<Loading fullScreen text="Đang tải..." />}>
@@ -59,7 +59,7 @@ export const router = createBrowserRouter([
       {
         path: "users",
         element: (
-          <ProtectedRoute roles={["admin_it", "accountant", "dev"]}>
+          <ProtectedRoute roles={["super_admin", "it_admin", "manager"]}>
             <UsersPage />
           </ProtectedRoute>
         ),
@@ -75,7 +75,7 @@ export const router = createBrowserRouter([
       {
         path: "invoices",
         element: (
-          <ProtectedRoute roles={["admin_it", "accountant"]}>
+          <ProtectedRoute roles={["super_admin", "it_admin", "manager"]}>
             <InvoicesPage />
           </ProtectedRoute>
         ),
@@ -99,7 +99,7 @@ export const router = createBrowserRouter([
       {
         path: "reports",
         element: (
-          <ProtectedRoute roles={["admin_it", "accountant", "dev"]}>
+          <ProtectedRoute roles={["super_admin", "it_admin", "manager"]}>
             <ReportsPage />
           </ProtectedRoute>
         ),
