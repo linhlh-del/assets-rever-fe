@@ -82,7 +82,7 @@ export default function AssetHistoryPage() {
           <AssetsList
             assets={assets}
             isLoading={isLoading}
-            onView={(asset) => navigate(`/assets/${asset.asset_code}`)}
+            onView={(asset) => navigate(`/assets/${asset.id}`)}
           />
         </div>
       )}

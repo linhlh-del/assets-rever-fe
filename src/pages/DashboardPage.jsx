@@ -13,7 +13,6 @@ import BrokenAssetsWidget from "@/components/dashboard/BrokenAssetsWidget";
 import { useDashboard } from "@/hooks/useDashboard";
 import { usePermission } from "@/hooks/usePermission";
 import { useAuth } from "@/hooks/useAuth";
-import { DatabaseSetup } from "@/components/DatabaseSetup";
 
 const DashboardPage = () => {
   const {
@@ -166,9 +165,6 @@ const DashboardPage = () => {
           <BrokenAssetsWidget data={widgets.brokenAssets} loading={isLoading} />
         </div>
       )}
-
-      {/* Database Setup */}
-      <DatabaseSetup />
     </div>
   );
 };

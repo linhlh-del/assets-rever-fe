@@ -7,7 +7,7 @@ export const getAssets = async ({
   category = null,
   status = null,
   department = null,
-  page = 1, // ✅ fix: default page=1 không phải 10
+  page = 1,
   limit = 20,
 } = {}) => {
   const params = new URLSearchParams({
@@ -21,37 +21,43 @@ export const getAssets = async ({
   if (department) params.append("department", department);
 
   // axios: response.data = { assets: [...], pagination: {...} }
-  const response = await apiClient.get(`/assets?${params}`);
-  return response.data; // ✅ trả về { assets, pagination }
+  const response = await apiClient.get(`/api/assets?${params}`);
+  return response.data; // { assets, pagination }
 };
 
 // GET /api/assets/:id
 export const getAsset = async (assetId) => {
-  const response = await apiClient.get(`/assets/${assetId}`);
-  return response.data; // ✅ trả về asset object trực tiếp
+  const response = await apiClient.get(`/api/assets/${assetId}`);
+  return response.data; // asset object trực tiếp
+};
+
+// GET /api/assets/:id/audit-trail
+export const getAssetAuditTrail = async (assetId) => {
+  const response = await apiClient.get(`/api/assets/${assetId}/audit-trail`);
+  return response.data;
 };
 
 // POST /api/assets
 export const createAsset = async (assetData) => {
-  const response = await apiClient.post("/assets", assetData);
-  return response.data; // ✅ trả về asset object trực tiếp
+  const response = await apiClient.post("/api/assets", assetData);
+  return response.data;
 };
 
-// PUT /api/assets/:id  — dùng asset.id (UUID)
+// PUT /api/assets/:id — dùng asset.id (UUID)
 export const updateAsset = async (assetId, assetData) => {
-  const response = await apiClient.put(`/assets/${assetId}`, assetData);
-  return response.data; // ✅
+  const response = await apiClient.put(`/api/assets/${assetId}`, assetData);
+  return response.data;
 };
 
 // DELETE /api/assets/:id
 export const deleteAsset = async (assetId) => {
-  const response = await apiClient.delete(`/assets/${assetId}`);
+  const response = await apiClient.delete(`/api/assets/${assetId}`);
   return response.data;
 };
 
 // POST /api/assets/:id/assign
 export const assignAsset = async (assetId, { employeeCode }) => {
-  const response = await apiClient.post(`/assets/${assetId}/assign`, {
+  const response = await apiClient.post(`/api/assets/${assetId}/assign`, {
     employeeCode,
   });
   return response.data;
@@ -59,8 +65,20 @@ export const assignAsset = async (assetId, { employeeCode }) => {
 
 // POST /api/assets/:id/return
 export const returnAsset = async (assetId, { returnNotes } = {}) => {
-  const response = await apiClient.post(`/assets/${assetId}/return`, {
+  const response = await apiClient.post(`/api/assets/${assetId}/return`, {
     returnNotes,
+  });
+  return response.data;
+};
+
+export const uploadAssetImages = async (assetId, files = []) => {
+  const formData = new FormData();
+  files.forEach((file) => formData.append("images", file));
+
+  const response = await apiClient.request(`/api/assets/${assetId}/images`, {
+    method: "POST",
+    headers: { "Content-Type": undefined },
+    body: formData,
   });
   return response.data;
 };

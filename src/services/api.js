@@ -53,19 +53,27 @@ export const apiClient = {
         signal: controller.signal,
         ...options,
       };
-
       if (session?.access_token) {
         config.headers.Authorization = `Bearer ${session.access_token}`;
-        console.log("🔑 Request with token");
-        console.log("🔍 Token info:", {
-          access_token: session.access_token,
-          user: session.user,
-        });
-      } else {
+      } else if (import.meta.env.DEV) {
         console.warn("⚠️  No session token");
       }
 
-      console.log(`📡 ${options.method || "GET"} ${endpoint}`);
+      if (import.meta.env.DEV) {
+        console.log(`📡 ${options.method || "GET"} ${endpoint}`);
+      }
+      // if (session?.access_token) {
+      //   config.headers.Authorization = `Bearer ${session.access_token}`;
+      //   // console.log("🔑 Request with token");
+      //   // console.log("🔍 Token info:", {
+      //   //   access_token: session.access_token,
+      //   //   user: session.user,
+      //   // });
+      // } else {
+      //   console.warn("⚠️  No session token");
+      // }
+
+      // console.log(`📡 ${options.method || "GET"} ${endpoint}`);
 
       const response = await fetch(url, config);
 
