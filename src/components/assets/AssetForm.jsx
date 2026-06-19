@@ -5,32 +5,34 @@ import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Select } from "@/components/common/Select";
+import { ASSET_CATEGORIES } from "@/utils/constants";
 
-const categories = [
-  "laptop",
-  "PC",
-  "man hinh",
-  "Mạng",
-  "Tủ lạnh",
-  "Đồ nội thất",
-  "Khác",
-];
+// ─── Zod schema ───────────────────────────────────────────────────────────────
+// Dùng enum từ constants để đảm bảo khớp CHECK constraint VPS
+const CATEGORY_VALUES = ASSET_CATEGORIES.map((c) => c.value);
 
 const assetSchema = z.object({
   asset_code: z.string().min(1, "Mã tài sản không được để trống"),
   product_name: z.string().min(1, "Tên sản phẩm không được để trống"),
-  category: z.string().min(1, "Vui lòng chọn loại"),
-  serial_number: z.string().optional(),
-  purchase_date: z.string().optional(),
+  category: z
+    .string()
+    .min(1, "Vui lòng chọn loại")
+    .refine((v) => CATEGORY_VALUES.includes(v), {
+      message: "Loại tài sản không hợp lệ",
+    }),
+  serial_number: z.string().optional().nullable(),
+  purchase_date: z.string().optional().nullable(),
   purchase_price: z.coerce
     .number()
     .positive("Giá phải lớn hơn 0")
     .optional()
+    .nullable()
     .or(z.literal("")),
-  warranty_expiry_date: z.string().optional(), // ✅ đổi từ warranty_end_date
-  notes: z.string().optional(),
+  warranty_expiry_date: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
 });
 
+// ─── Component ────────────────────────────────────────────────────────────────
 export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
   const {
     register,
@@ -41,14 +43,13 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
     defaultValues: initialData
       ? {
           ...initialData,
-          // ✅ map warranty_expiry_date từ DB vào form
           warranty_expiry_date: initialData.warranty_expiry_date
             ? initialData.warranty_expiry_date.slice(0, 10)
             : "",
           purchase_date: initialData.purchase_date
             ? initialData.purchase_date.slice(0, 10)
             : "",
-          purchase_price: initialData.purchase_price || "",
+          purchase_price: initialData.purchase_price ?? "",
         }
       : {
           asset_code: "",
@@ -57,18 +58,18 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
           serial_number: "",
           purchase_date: "",
           purchase_price: "",
-          warranty_expiry_date: "", // ✅ đổi từ warranty_end_date
+          warranty_expiry_date: "",
           notes: "",
         },
   });
 
   const handleFormSubmit = (data) => {
-    // ✅ Làm sạch data trước khi gửi — bỏ empty string thành null
+    // Chuẩn hóa: empty string → null trước khi gửi lên BE
     const cleaned = {
       ...data,
       purchase_price: data.purchase_price || null,
       purchase_date: data.purchase_date || null,
-      warranty_expiry_date: data.warranty_expiry_date || null, // ✅ đúng tên cột DB
+      warranty_expiry_date: data.warranty_expiry_date || null,
       serial_number: data.serial_number || null,
       notes: data.notes || null,
     };
@@ -82,7 +83,7 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
         <label className="block text-sm font-medium mb-1">Mã tài sản *</label>
         <Input
           {...register("asset_code")}
-          placeholder="AS001"
+          placeholder="AS-001"
           error={errors.asset_code?.message}
           disabled={isLoading || isEditing}
           className={isEditing ? "bg-muted cursor-not-allowed" : ""}
@@ -105,27 +106,32 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
         />
       </div>
 
-      {/* Category */}
-      <Select
-        label="Loại *"
-        {...register("category")}
-        error={errors.category?.message}
-        disabled={isLoading}
-      >
-        <option value="">-- Chọn loại --</option>
-        {categories.map((cat) => (
-          <option key={cat} value={cat}>
-            {cat}
-          </option>
-        ))}
-      </Select>
+      {/* Category — dùng ASSET_CATEGORIES từ constants, khớp CHECK constraint VPS */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Loại *</label>
+        <Select
+          {...register("category")}
+          error={errors.category?.message}
+          disabled={isLoading}
+        >
+          <option value="">-- Chọn loại --</option>
+          {ASSET_CATEGORIES.map((cat) => (
+            <option key={cat.value} value={cat.value}>
+              {cat.label}
+            </option>
+          ))}
+        </Select>
+        {errors.category && (
+          <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
+        )}
+      </div>
 
       {/* Serial Number */}
       <div>
         <label className="block text-sm font-medium mb-1">Số seri</label>
         <Input
           {...register("serial_number")}
-          placeholder="C02R3..."
+          placeholder="C02R3ABCDEF"
           error={errors.serial_number?.message}
           disabled={isLoading}
         />
@@ -148,13 +154,14 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
         <Input
           {...register("purchase_price")}
           type="number"
+          min="0"
           placeholder="25000000"
           error={errors.purchase_price?.message}
           disabled={isLoading}
         />
       </div>
 
-      {/* Warranty Expiry Date — ✅ đổi tên field */}
+      {/* Warranty Expiry Date */}
       <div>
         <label className="block text-sm font-medium mb-1">Hết bảo hành</label>
         <Input
@@ -170,10 +177,12 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
         <label className="block text-sm font-medium mb-1">Ghi chú</label>
         <textarea
           {...register("notes")}
-          placeholder="Thông tin bổ sung..."
-          rows="3"
+          placeholder="Thông tin bổ sung về tình trạng, cấu hình..."
+          rows={3}
           disabled={isLoading}
-          className="w-full px-3 py-2 border rounded-md text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm
+                     focus:outline-none focus:ring-primary-500 focus:border-primary-500
+                     disabled:bg-gray-100 disabled:cursor-not-allowed"
         />
       </div>
 

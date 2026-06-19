@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/common/Button";
 import { Loading } from "@/components/common/Loading";
@@ -25,7 +25,6 @@ export default function AssetsPage() {
   const [assigningAsset, setAssigningAsset] = useState(null);
   const [returningAsset, setReturningAsset] = useState(null);
 
-  // ✅ FIX 1: Bỏ filter mặc định category và department
   const [filters, setFilters] = useState({
     search: "",
     category: null,
@@ -35,7 +34,7 @@ export default function AssetsPage() {
     limit: 20,
   });
 
-  // Fetch data
+  // ─── Fetch ────────────────────────────────────────────────────────────────
   const { data, error, isLoading } = useAssets({
     category: filters.category,
     department: filters.department,
@@ -45,29 +44,29 @@ export default function AssetsPage() {
     status: filters.status,
   });
 
-  // Parse response
-  let assets = [];
-  let total = 0;
+  // ─── Parse response ───────────────────────────────────────────────────────
+  // getAssets() (sau Fix 1) return { assets: [...], pagination: { total, page, limit } }
+  // data ở đây = return value của getAssets(), KHÔNG phải axios response
+  const rawAssets = data?.assets || [];
+  const pagination = data?.pagination || { total: 0 };
+  const total = pagination.total || 0;
 
-  if (data) {
-    if (data.assets && Array.isArray(data.assets)) {
-      assets = data.assets;
-      total = data.pagination?.total || data.assets.length;
-    } else if (Array.isArray(data)) {
-      assets = data;
-      total = data.length;
-    }
-  }
+  // Role "user" chỉ thấy tài sản đang dùng của mình
+  // Lý tưởng nhất là filter ở BE (gửi thêm param employee_code),
+  // nhưng hiện tại BE chưa support → filter ở FE tạm thời
+  const assets =
+    role === "user" && user
+      ? rawAssets.filter(
+          (a) => a.current_user_employee_code === user.employee_code,
+        )
+      : rawAssets;
 
-  // Filter theo role user — chỉ thấy tài sản của mình
-  if (role === "user" && user) {
-    assets = assets.filter(
-      (asset) => asset.current_user_employee_code === user.employee_code,
-    );
-    total = assets.length;
-  }
+  // Nếu filter FE thì total sẽ sai so với số thật trên DB,
+  // nhưng chấp nhận được cho đến khi BE hỗ trợ filter theo employee
+  const displayTotal = role === "user" ? assets.length : total;
+  const totalPages = Math.max(1, Math.ceil(displayTotal / filters.limit));
 
-  // Loading auth
+  // ─── Auth guard ───────────────────────────────────────────────────────────
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -78,14 +77,12 @@ export default function AssetsPage() {
 
   if (!user) return null;
 
-  // Pagination
-  const totalPages = Math.ceil(total / filters.limit);
-
+  // ─── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      {/* Error */}
+      {/* Error banner */}
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded">
           <p className="font-bold text-red-800">❌ Lỗi tải dữ liệu</p>
           <p className="text-sm text-red-700 mt-1">{error?.message}</p>
           <button
@@ -102,7 +99,11 @@ export default function AssetsPage() {
         <div>
           <h1 className="text-3xl font-bold">Quản lý tài sản</h1>
           <p className="text-muted-foreground">
-            {total > 0 ? `${total} tài sản` : "Chưa có tài sản nào"}
+            {isLoading
+              ? "Đang tải..."
+              : displayTotal > 0
+                ? `${displayTotal} tài sản`
+                : "Chưa có tài sản nào"}
           </p>
         </div>
         {canCreate && (
@@ -145,19 +146,21 @@ export default function AssetsPage() {
         </div>
       )}
 
-      {/* Pagination */}
-      {total > 0 && (
+      {/* Pagination — chỉ hiện khi không filter theo role user */}
+      {displayTotal > 0 && role !== "user" && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Hiển thị {(filters.page - 1) * filters.limit + 1}–
-            {Math.min(filters.page * filters.limit, total)} / {total} tài sản
+            Hiển thị{" "}
+            {Math.min((filters.page - 1) * filters.limit + 1, displayTotal)}–
+            {Math.min(filters.page * filters.limit, displayTotal)} /{" "}
+            {displayTotal} tài sản
           </p>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setFilters((f) => ({ ...f, page: f.page - 1 }))}
-              disabled={filters.page === 1}
+              disabled={filters.page <= 1}
             >
               Trang trước
             </Button>
@@ -168,7 +171,6 @@ export default function AssetsPage() {
               variant="outline"
               size="sm"
               onClick={() => setFilters((f) => ({ ...f, page: f.page + 1 }))}
-              // ✅ FIX 3: Dùng totalPages thay vì so sánh sai
               disabled={filters.page >= totalPages}
             >
               Trang sau

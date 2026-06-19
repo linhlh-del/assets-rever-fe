@@ -1,7 +1,8 @@
-// services/assetService.js
 import { apiClient } from "@/services/api";
 
-// GET /api/assets
+// Chuẩn hóa: apiClient trả về JSON body trực tiếp
+// BE format: { success: true, data: { ... } }
+
 export const getAssets = async ({
   search = "",
   category = null,
@@ -14,71 +15,74 @@ export const getAssets = async ({
     page: page.toString(),
     limit: limit.toString(),
   });
-
   if (search?.trim()) params.append("search", search.trim());
   if (category) params.append("category", category);
   if (status) params.append("status", status);
-  if (department) params.append("department", department);
+  if (department) params.append("department_id", department);
 
-  // axios: response.data = { assets: [...], pagination: {...} }
-  const response = await apiClient.get(`/api/assets?${params}`);
-  return response.data; // { assets, pagination }
+  const res = await apiClient.get(`/api/assets?${params}`);
+  // res = { success, data: { assets, pagination } }
+  return {
+    assets: res?.data?.assets || [],
+    pagination: res?.data?.pagination || { total: 0, page, limit },
+  };
 };
 
-// GET /api/assets/:id
 export const getAsset = async (assetId) => {
-  const response = await apiClient.get(`/api/assets/${assetId}`);
-  return response.data; // asset object trực tiếp
+  const res = await apiClient.get(`/api/assets/${assetId}`);
+  return res?.data?.asset || res?.data || null;
 };
 
-// GET /api/assets/:id/audit-trail
 export const getAssetAuditTrail = async (assetId) => {
-  const response = await apiClient.get(`/api/assets/${assetId}/audit-trail`);
-  return response.data;
+  const res = await apiClient.get(`/api/assets/${assetId}/audit-trail`);
+  return res?.data?.history || [];
 };
 
-// POST /api/assets
 export const createAsset = async (assetData) => {
-  const response = await apiClient.post("/api/assets", assetData);
-  return response.data;
+  const res = await apiClient.post("/api/assets", assetData);
+  return res?.data?.asset || res?.data;
 };
 
-// PUT /api/assets/:id — dùng asset.id (UUID)
 export const updateAsset = async (assetId, assetData) => {
-  const response = await apiClient.put(`/api/assets/${assetId}`, assetData);
-  return response.data;
+  const res = await apiClient.put(`/api/assets/${assetId}`, assetData);
+  return res?.data?.asset || res?.data;
 };
 
-// DELETE /api/assets/:id
 export const deleteAsset = async (assetId) => {
-  const response = await apiClient.delete(`/api/assets/${assetId}`);
-  return response.data;
+  const res = await apiClient.delete(`/api/assets/${assetId}`);
+  return res?.data;
 };
 
-// POST /api/assets/:id/assign
 export const assignAsset = async (assetId, { employeeCode }) => {
-  const response = await apiClient.post(`/api/assets/${assetId}/assign`, {
-    employeeCode,
+  const res = await apiClient.post(`/api/assets/${assetId}/assign`, {
+    employee_code: employeeCode,
   });
-  return response.data;
+  return res?.data;
 };
 
-// POST /api/assets/:id/return
 export const returnAsset = async (assetId, { returnNotes } = {}) => {
-  const response = await apiClient.post(`/api/assets/${assetId}/return`, {
-    returnNotes,
+  const res = await apiClient.post(`/api/assets/${assetId}/return`, {
+    notes: returnNotes,
   });
-  return response.data;
+  return res?.data;
 };
 
 export const uploadAssetImages = async (assetId, files = []) => {
+  const {
+    data: { session },
+  } = await import("@/services/api").then((m) => m.supabase.auth.getSession());
   const formData = new FormData();
   files.forEach((file) => formData.append("images", file));
 
-  const response = await apiClient.request(`/api/assets/${assetId}/images`, {
-    method: "POST",
-    headers: { "Content-Type": undefined },
-    body: formData,
-  });
-  return response.data;
+  const response = await fetch(
+    `${import.meta.env.VITE_API_URL || "http://localhost:3004"}/api/assets/${assetId}/images`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+      // KHÔNG set Content-Type — browser tự set multipart boundary
+      body: formData,
+    },
+  );
+  if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
+  return response.json();
 };

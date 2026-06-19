@@ -2,27 +2,23 @@ import { Input } from "@/components/common/Input";
 import { Select } from "@/components/common/Select";
 import { Button } from "@/components/common/Button";
 import { Search, X } from "lucide-react";
-import { DEPARTMENTS } from "@/utils/constants";
+import {
+  ASSET_CATEGORIES,
+  ASSET_STATUS_LABELS,
+  ASSET_STATUS,
+} from "@/utils/constants";
+import { useDepartments } from "@/hooks/useDepartments";
 
-const categories = [
-  "Máy tính",
-  "Điện thoại",
-  "Ngoại vi",
-  "Mạng",
-  "Tủ lạnh",
-  "Đồ nội thất",
-  "Khác",
-];
-
-const statuses = [
-  { value: "available", label: "Khả dụng" },
-  { value: "in_use", label: "Đang sử dụng" },
-  { value: "maintenance", label: "Bảo trì" },
-  { value: "broken", label: "Hỏng hóc" },
-  { value: "disposed", label: "Đã thanh lý" },
-];
+// statuses build từ constants — không hardcode
+const statuses = Object.entries(ASSET_STATUS).map(([, value]) => ({
+  value,
+  label: ASSET_STATUS_LABELS[value],
+}));
 
 export function AssetFilters({ filters, onFiltersChange }) {
+  // Department filter dùng API thật — giống UserFilters
+  const { departments = [], isLoading: deptLoading } = useDepartments();
+
   const handleSearchChange = (value) => {
     onFiltersChange({ ...filters, search: value, page: 1 });
   };
@@ -36,6 +32,7 @@ export function AssetFilters({ filters, onFiltersChange }) {
   };
 
   const handleDepartmentChange = (value) => {
+    // Gửi department_id (UUID) lên BE, không phải tên text
     onFiltersChange({ ...filters, department: value || null, page: 1 });
   };
 
@@ -54,9 +51,9 @@ export function AssetFilters({ filters, onFiltersChange }) {
 
   return (
     <div className="space-y-4">
-      {/* Search Input */}
+      {/* Search */}
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
           placeholder="Tìm theo mã, tên, serial..."
           value={filters.search || ""}
@@ -66,21 +63,21 @@ export function AssetFilters({ filters, onFiltersChange }) {
       </div>
 
       {/* Filter Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-        {/* Category Filter */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+        {/* Category — 13 giá trị từ constants, khớp CHECK constraint VPS */}
         <Select
           value={filters.category || ""}
           onChange={(e) => handleCategoryChange(e.target.value)}
         >
           <option value="">Tất cả loại</option>
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
+          {ASSET_CATEGORIES.map((cat) => (
+            <option key={cat.value} value={cat.value}>
+              {cat.label}
             </option>
           ))}
         </Select>
 
-        {/* Status Filter */}
+        {/* Status — từ constants */}
         <Select
           value={filters.status || ""}
           onChange={(e) => handleStatusChange(e.target.value)}
@@ -93,20 +90,23 @@ export function AssetFilters({ filters, onFiltersChange }) {
           ))}
         </Select>
 
-        {/* Department Filter */}
+        {/* Department — UUID từ API, giống UserFilters */}
         <Select
           value={filters.department || ""}
           onChange={(e) => handleDepartmentChange(e.target.value)}
+          disabled={deptLoading}
         >
           <option value="">Tất cả bộ phận</option>
-          {DEPARTMENTS.map((dept) => (
-            <option key={dept.value} value={dept.value}>
-              {dept.label}
+          {departments.map((dept) => (
+            <option key={dept.id} value={dept.id}>
+              {dept.parent_name
+                ? `${dept.parent_name} › ${dept.name}`
+                : dept.name}
             </option>
           ))}
         </Select>
 
-        {/* Reset Button */}
+        {/* Reset */}
         {hasActiveFilters && (
           <Button
             variant="ghost"

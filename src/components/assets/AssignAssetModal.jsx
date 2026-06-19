@@ -5,101 +5,114 @@ import { Button } from "@/components/common/Button";
 import { Select } from "@/components/common/Select";
 import { useAssignAsset } from "@/hooks/useAssets";
 import { useUsers } from "@/hooks/useUsers";
-import { DEPARTMENTS } from "@/utils/constants";
+import { toast } from "sonner";
 
 export function AssignAssetModal({ isOpen, onClose, asset }) {
   const [selectedUser, setSelectedUser] = useState("");
-  const [selectedDepartment, setSelectedDepartment] = useState("");
   const [notes, setNotes] = useState("");
 
   const { mutate: assignAsset, isPending } = useAssignAsset();
-  const { data: usersData } = useUsers({ limit: 1000 });
 
-  // ✅ useUsers có thể trả về nhiều format khác nhau — handle hết
-  const users =
-    usersData?.users ||
-    usersData?.data?.users ||
-    usersData?.data ||
-    usersData ||
-    [];
+  // Chỉ lấy user active — không cần limit 1000
+  // userService.getUsers() return { data: users[], total }
+  const { data: usersData, isLoading: usersLoading } = useUsers({
+    status: "active",
+    limit: 200,
+  });
+
+  // userService đã chuẩn hóa: return { data: [...], total }
+  const users = usersData?.data || [];
+
+  const selectedUserData =
+    users.find((u) => u.employee_code === selectedUser) ?? null;
 
   if (!asset) return null;
 
-  const handleAssign = async () => {
-    if (!selectedUser) return;
+  const handleAssign = () => {
+    if (!selectedUser) {
+      toast.error("Vui lòng chọn nhân viên");
+      return;
+    }
 
-    // ✅ FIX: dùng asset.id (UUID) thay vì asset.asset_code
     assignAsset(
-      {
-        assetId: asset.id,
-        employeeCode: selectedUser,
-      },
+      { assetId: asset.id, employeeCode: selectedUser },
       {
         onSuccess: () => {
+          toast.success(
+            `Đã gán ${asset.asset_code} cho ${selectedUserData?.full_name}`,
+          );
           setSelectedUser("");
-          setSelectedDepartment("");
           setNotes("");
           onClose();
         },
         onError: (error) => {
-          console.error("❌ Assign error:", error.message);
+          toast.error(`Lỗi phân công: ${error.message}`);
         },
       },
     );
   };
 
-  const selectedUserData = Array.isArray(users)
-    ? users.find((u) => u.employee_code === selectedUser)
-    : null;
+  const handleClose = () => {
+    setSelectedUser("");
+    setNotes("");
+    onClose();
+  };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Phân công tài sản"
       description={`Gán ${asset.product_name} cho nhân viên`}
       className="max-w-md"
     >
       <div className="space-y-4">
         {/* Asset Info */}
-        <div className="bg-muted p-3 rounded-lg">
-          <p className="text-sm">
+        <div className="bg-muted p-3 rounded-lg text-sm space-y-1">
+          <p>
             <strong>Mã:</strong> {asset.asset_code}
           </p>
-          <p className="text-sm">
+          <p>
             <strong>Tên:</strong> {asset.product_name}
           </p>
-          <p className="text-sm">
-            <strong>Serial:</strong> {asset.serial_number || "-"}
+          <p>
+            <strong>Serial:</strong> {asset.serial_number || "—"}
           </p>
         </div>
 
         {/* Select User */}
         <div>
-          <label className="block text-sm font-medium mb-1">Nhân viên *</label>
+          <label className="block text-sm font-medium mb-1">
+            Nhân viên <span className="text-red-500">*</span>
+          </label>
           <Select
             value={selectedUser}
             onChange={(e) => setSelectedUser(e.target.value)}
-            disabled={isPending}
+            disabled={isPending || usersLoading}
           >
-            <option value="">-- Chọn nhân viên --</option>
-            {Array.isArray(users) &&
-              users.map((user) => (
-                <option key={user.employee_code} value={user.employee_code}>
-                  {user.full_name} ({user.employee_code})
-                </option>
-              ))}
+            <option value="">
+              {usersLoading ? "Đang tải..." : "-- Chọn nhân viên --"}
+            </option>
+            {users.map((user) => (
+              <option key={user.employee_code} value={user.employee_code}>
+                {user.full_name} ({user.employee_code})
+              </option>
+            ))}
           </Select>
         </div>
 
-        {/* User Info */}
+        {/* Selected User Info */}
         {selectedUserData && (
-          <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 text-sm">
+          <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg text-sm space-y-1">
             <p>
               <strong>Email:</strong> {selectedUserData.email}
             </p>
+            {/* department_name từ BE join — fallback nếu chỉ có department_id */}
             <p>
-              <strong>Bộ phận:</strong> {selectedUserData.department}
+              <strong>Bộ phận:</strong>{" "}
+              {selectedUserData.department_name ||
+                selectedUserData.department_id ||
+                "—"}
             </p>
           </div>
         )}
@@ -110,19 +123,21 @@ export function AssignAssetModal({ isOpen, onClose, asset }) {
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Tình trạng, điều kiện..."
-            rows="3"
+            placeholder="Tình trạng thiết bị khi bàn giao..."
+            rows={3}
             disabled={isPending}
-            className="w-full px-3 py-2 border rounded-md text-sm disabled:opacity-50"
+            className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm
+                       focus:outline-none focus:ring-primary-500 focus:border-primary-500
+                       disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2 pt-4">
+        <div className="flex gap-2 pt-2">
           <Button
             variant="ghost"
             className="flex-1"
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isPending}
           >
             Hủy
