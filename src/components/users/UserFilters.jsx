@@ -2,9 +2,12 @@ import { Input } from "@/components/common/Input";
 import { Select } from "@/components/common/Select";
 import { Button } from "@/components/common/Button";
 import { Search, X } from "lucide-react";
-import { DEPARTMENTS, ROLES } from "@/utils/constants";
+import { ROLES, ROLE_LABELS } from "@/utils/constants";
+import { useDepartments } from "@/hooks/useDepartments";
 
 export function UserFilters({ filters, onFiltersChange }) {
+  const { departments = [] } = useDepartments();
+
   const handleSearchChange = (value) => {
     onFiltersChange({ ...filters, search: value, page: 1 });
   };
@@ -18,7 +21,7 @@ export function UserFilters({ filters, onFiltersChange }) {
   };
 
   const handleStatusChange = (value) => {
-    onFiltersChange({ ...filters, status: value || null, page: 1 });
+    onFiltersChange({ ...filters, status: value || "active", page: 1 });
   };
 
   const handleReset = () => {
@@ -26,17 +29,21 @@ export function UserFilters({ filters, onFiltersChange }) {
       search: "",
       department: null,
       role: null,
-      status: null,
+      status: "active",
       page: 1,
+      limit: filters.limit || 20,
     });
   };
 
   const hasActiveFilters =
-    filters.search || filters.department || filters.role || filters.status;
+    filters.search ||
+    filters.department ||
+    filters.role ||
+    (filters.status && filters.status !== "active");
 
   return (
     <div className="space-y-4">
-      {/* Search Input */}
+      {/* Search */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
@@ -49,15 +56,17 @@ export function UserFilters({ filters, onFiltersChange }) {
 
       {/* Filter Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Department Filter */}
+        {/* Department Filter — UUID từ API */}
         <Select
           value={filters.department || ""}
           onChange={(e) => handleDepartmentChange(e.target.value)}
         >
           <option value="">Tất cả bộ phận</option>
-          {DEPARTMENTS.map((dept) => (
-            <option key={dept.value} value={dept.value}>
-              {dept.label}
+          {departments.map((dept) => (
+            <option key={dept.id} value={dept.id}>
+              {dept.parent_name
+                ? `${dept.parent_name} › ${dept.name}`
+                : dept.name}
             </option>
           ))}
         </Select>
@@ -68,9 +77,9 @@ export function UserFilters({ filters, onFiltersChange }) {
           onChange={(e) => handleRoleChange(e.target.value)}
         >
           <option value="">Tất cả vai trò</option>
-          {Object.entries(ROLES).map(([key, label]) => (
-            <option key={key} value={key}>
-              {label}
+          {Object.entries(ROLES).map(([key, value]) => (
+            <option key={key} value={value}>
+              {ROLE_LABELS[value]}
             </option>
           ))}
         </Select>
@@ -86,7 +95,7 @@ export function UserFilters({ filters, onFiltersChange }) {
           <option value="resigned">Nghỉ việc</option>
         </Select>
 
-        {/* Reset Button */}
+        {/* Reset */}
         {hasActiveFilters && (
           <Button
             variant="ghost"
