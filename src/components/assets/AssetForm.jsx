@@ -1,11 +1,12 @@
 // components/assets/AssetForm.jsx
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Select } from "@/components/common/Select";
 import { FileUpload } from "@/components/common/FileUpload";
+import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { ASSET_CATEGORIES } from "@/utils/constants";
 import { formatVND } from "@/utils/formatters";
 import { useInvoiceOptions } from "@/hooks/useInvoices";
@@ -31,6 +32,10 @@ const assetSchema = z.object({
     .or(z.literal("")),
   warranty_expiry_date: z.string().optional().nullable(),
   invoice_id: z.string().uuid().optional().nullable().or(z.literal("")),
+  // notes giờ lưu HTML string (từ RichTextEditor) thay vì plain text,
+  // để giữ được xuống dòng + bullet/numbered list khi paste từ Word/Gmail
+  // (BUG-015). Không validate cấu trúc HTML ở đây — sanitize được xử lý ở
+  // RichTextDisplay (lúc hiển thị) và be/lib/sanitizeNotes.js (lúc lưu).
   notes: z.string().optional().nullable(),
 });
 
@@ -50,6 +55,7 @@ export function AssetForm({
     register,
     handleSubmit,
     watch,
+    control,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(assetSchema),
@@ -253,18 +259,28 @@ export function AssetForm({
         </div>
       )}
 
-      {/* Notes */}
+      {/* Notes — Rich Text Editor (BUG-015 fix):
+          giữ xuống dòng + bullet/numbered list khi paste từ Word/Gmail/
+          Outlook/Google Docs. Dùng Controller vì RichTextEditor là
+          controlled component, không tương thích register() trực tiếp
+          như input/textarea thường. */}
       <div>
         <label className="block text-sm font-medium mb-1">Ghi chú</label>
-        <textarea
-          {...register("notes")}
-          placeholder="Thông tin bổ sung về tình trạng, cấu hình..."
-          rows={3}
-          disabled={isLoading}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm
-                     focus:outline-none focus:ring-primary-500 focus:border-primary-500
-                     disabled:bg-gray-100 disabled:cursor-not-allowed"
+        <Controller
+          name="notes"
+          control={control}
+          render={({ field }) => (
+            <RichTextEditor
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="Thông tin bổ sung về tình trạng, cấu hình..."
+              disabled={isLoading}
+            />
+          )}
         />
+        {errors.notes && (
+          <p className="mt-1 text-sm text-red-600">{errors.notes.message}</p>
+        )}
       </div>
 
       {/* Submit */}

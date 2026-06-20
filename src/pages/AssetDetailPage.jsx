@@ -9,6 +9,7 @@ import { EditAssetModal } from "@/components/assets/EditAssetModal";
 import { AssignAssetModal } from "@/components/assets/AssignAssetModal";
 import { ReturnAssetModal } from "@/components/assets/ReturnAssetModal";
 import { DisposalAssetModal } from "@/components/assets/DisposalAssetModal";
+import { RichTextDisplay } from "@/components/common/RichTextDisplay";
 import { useAsset, useAssetAuditTrail } from "@/hooks/useAssets";
 import { usePermission } from "@/hooks/usePermission";
 import { formatVND } from "@/utils/formatters";
@@ -160,19 +161,21 @@ export default function AssetDetailPage() {
             </Card>
           )}
 
-          {/* Notes */}
+          {/* Notes — hiển thị HTML đã lưu (xuống dòng + bullet/numbered
+              list, BUG-015) qua RichTextDisplay. Component này sanitize
+              bằng DOMPurify rồi render bằng dangerouslySetInnerHTML, khác
+              với <p>{asset.notes}</p> trước đây vốn chỉ in ra chuỗi HTML
+              thô dạng text (React tự escape mọi string trong JSX) thay vì
+              hiển thị đúng định dạng. */}
           {asset.notes && (
             <Card>
               <h3 className="font-semibold mb-2">Ghi chú</h3>
-              <p className="text-sm text-foreground">{asset.notes}</p>
+              <RichTextDisplay html={asset.notes} />
             </Card>
           )}
 
           {/* Images */}
-          <AssetImages
-            assetId={asset.id}
-            images={asset.asset_images || []}
-          />
+          <AssetImages assetId={asset.id} images={asset.asset_images || []} />
 
           {/* Audit Trail */}
           <Card>
