@@ -107,11 +107,11 @@ export function AssignAssetModal({ isOpen, onClose, asset }) {
             <p>
               <strong>Email:</strong> {selectedUserData.email}
             </p>
-            {/* department_name từ BE join — fallback nếu chỉ có department_id */}
+            {/* department từ BE join — fallback department_name nếu có */}
             <p>
               <strong>Bộ phận:</strong>{" "}
-              {selectedUserData.department_name ||
-                selectedUserData.department_id ||
+              {selectedUserData.department ||
+                selectedUserData.department_name ||
                 "—"}
             </p>
           </div>

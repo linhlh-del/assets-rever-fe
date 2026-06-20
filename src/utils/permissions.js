@@ -30,6 +30,10 @@ export const canDisposeAsset = (role) => {
   return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
 };
 
+export const canDeleteAsset = (role) => {
+  return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN].includes(role);
+};
+
 export const canViewAssetPrice = (role) => {
   return [ROLES.SUPER_ADMIN, ROLES.IT_ADMIN, ROLES.MANAGER].includes(role);
 };

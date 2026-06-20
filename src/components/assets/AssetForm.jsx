@@ -5,10 +5,11 @@ import { z } from "zod";
 import { Button } from "@/components/common/Button";
 import { Input } from "@/components/common/Input";
 import { Select } from "@/components/common/Select";
+import { FileUpload } from "@/components/common/FileUpload";
 import { ASSET_CATEGORIES } from "@/utils/constants";
+import { formatVND } from "@/utils/formatters";
+import { useInvoiceOptions } from "@/hooks/useInvoices";
 
-// ─── Zod schema ───────────────────────────────────────────────────────────────
-// Dùng enum từ constants để đảm bảo khớp CHECK constraint VPS
 const CATEGORY_VALUES = ASSET_CATEGORIES.map((c) => c.value);
 
 const assetSchema = z.object({
@@ -29,14 +30,26 @@ const assetSchema = z.object({
     .nullable()
     .or(z.literal("")),
   warranty_expiry_date: z.string().optional().nullable(),
+  invoice_id: z.string().uuid().optional().nullable().or(z.literal("")),
   notes: z.string().optional().nullable(),
 });
 
-// ─── Component ────────────────────────────────────────────────────────────────
-export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
+export function AssetForm({
+  initialData,
+  onSubmit,
+  isLoading,
+  isEditing,
+  showImageUpload = false,
+  pendingImages = [],
+  onImagesChange,
+}) {
+  const { data: invoices = [], isLoading: invoicesLoading } =
+    useInvoiceOptions();
+
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(assetSchema),
@@ -50,6 +63,7 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
             ? initialData.purchase_date.slice(0, 10)
             : "",
           purchase_price: initialData.purchase_price ?? "",
+          invoice_id: initialData.invoice_id || "",
         }
       : {
           asset_code: "",
@@ -59,21 +73,40 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
           purchase_date: "",
           purchase_price: "",
           warranty_expiry_date: "",
+          invoice_id: "",
           notes: "",
         },
   });
 
+  const purchasePrice = watch("purchase_price");
+  const pricePreview =
+    purchasePrice && !isNaN(Number(purchasePrice)) && Number(purchasePrice) > 0
+      ? formatVND(purchasePrice)
+      : null;
+
   const handleFormSubmit = (data) => {
-    // Chuẩn hóa: empty string → null trước khi gửi lên BE
     const cleaned = {
       ...data,
       purchase_price: data.purchase_price || null,
       purchase_date: data.purchase_date || null,
       warranty_expiry_date: data.warranty_expiry_date || null,
       serial_number: data.serial_number || null,
+      invoice_id: data.invoice_id || null,
       notes: data.notes || null,
     };
     onSubmit(cleaned);
+  };
+
+  const handleFilesSelected = (files) => {
+    if (onImagesChange) {
+      onImagesChange([...pendingImages, ...files].slice(0, 5));
+    }
+  };
+
+  const handleRemoveImage = (index) => {
+    if (onImagesChange) {
+      onImagesChange(pendingImages.filter((_, i) => i !== index));
+    }
   };
 
   return (
@@ -106,7 +139,7 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
         />
       </div>
 
-      {/* Category — dùng ASSET_CATEGORIES từ constants, khớp CHECK constraint VPS */}
+      {/* Category */}
       <div>
         <label className="block text-sm font-medium mb-1">Loại *</label>
         <Select
@@ -124,6 +157,29 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
         {errors.category && (
           <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
         )}
+      </div>
+
+      {/* Invoice */}
+      <div>
+        <label className="block text-sm font-medium mb-1">Hóa đơn</label>
+        <Select
+          {...register("invoice_id")}
+          disabled={isLoading || invoicesLoading}
+        >
+          <option value="">
+            {invoicesLoading
+              ? "Đang tải hóa đơn..."
+              : "-- Chọn hóa đơn (không bắt buộc) --"}
+          </option>
+          {invoices.map((inv) => (
+            <option key={inv.id} value={inv.id}>
+              {inv.invoice_number} — {inv.supplier || "N/A"}
+            </option>
+          ))}
+        </Select>
+        <p className="text-xs text-muted-foreground mt-1">
+          Liên kết tài sản với hóa đơn mua hàng từ kế toán
+        </p>
       </div>
 
       {/* Serial Number */}
@@ -159,6 +215,9 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
           error={errors.purchase_price?.message}
           disabled={isLoading}
         />
+        {pricePreview && (
+          <p className="text-xs text-muted-foreground mt-1">≈ {pricePreview}</p>
+        )}
       </div>
 
       {/* Warranty Expiry Date */}
@@ -171,6 +230,28 @@ export function AssetForm({ initialData, onSubmit, isLoading, isEditing }) {
           disabled={isLoading}
         />
       </div>
+
+      {/* Image Upload (create mode only) */}
+      {showImageUpload && (
+        <div>
+          <FileUpload
+            label="Ảnh tài sản"
+            onFilesSelected={handleFilesSelected}
+            files={pendingImages}
+            onRemove={handleRemoveImage}
+            accept={{
+              "image/png": [".png"],
+              "image/jpeg": [".jpg", ".jpeg"],
+              "image/webp": [".webp"],
+              "application/pdf": [".pdf"],
+            }}
+            maxFiles={5}
+            maxSize={10 * 1024 * 1024}
+            disabled={isLoading}
+            helperText="Ảnh sẽ được tải lên sau khi tạo tài sản thành công"
+          />
+        </div>
+      )}
 
       {/* Notes */}
       <div>

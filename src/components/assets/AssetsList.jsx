@@ -1,7 +1,8 @@
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
 import { usePermission } from "@/hooks/usePermission";
-import { Edit2, Eye, Send, RotateCcw } from "lucide-react";
+import { formatVND } from "@/utils/formatters";
+import { Edit2, Eye, Send, RotateCcw, Trash2 } from "lucide-react";
 
 const statusLabels = {
   available: "Khả dụng",
@@ -26,8 +27,9 @@ export function AssetsList({
   onEdit,
   onAssign,
   onReturn,
+  onDelete,
 }) {
-  const { role } = usePermission();
+  const { role, canDeleteAsset } = usePermission();
   const isRegularUser = role === "user";
 
   if (isLoading) {
@@ -115,9 +117,7 @@ export function AssetsList({
               {/* Giá */}
               {!isRegularUser && (
                 <td className="px-4 py-3 text-sm">
-                  {asset.purchase_price
-                    ? asset.purchase_price.toLocaleString("vi-VN")
-                    : "—"}
+                  {formatVND(asset.purchase_price)}
                 </td>
               )}
 
@@ -163,6 +163,18 @@ export function AssetsList({
                       title="Thu hồi"
                     >
                       <RotateCcw className="w-4 h-4" />
+                    </Button>
+                  )}
+
+                  {canDeleteAsset && asset.status === "available" && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onDelete?.(asset)}
+                      title="Xóa tài sản"
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="w-4 h-4" />
                     </Button>
                   )}
                 </div>

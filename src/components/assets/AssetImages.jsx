@@ -5,15 +5,15 @@ import { FileUpload } from '@/components/common/FileUpload'
 import { useUploadAssetImages } from '@/hooks/useAssets'
 import { X, Download, Eye } from 'lucide-react'
 
-export function AssetImages({ assetCode, images = [] }) {
+export function AssetImages({ assetId, images = [] }) {
   const [previewImage, setPreviewImage] = useState(null)
   const { mutate: uploadImages, isPending } = useUploadAssetImages()
 
   const handleFilesSelected = (files) => {
     uploadImages(
       {
-        assetCode,
-        files: files,
+        assetId,
+        files,
       },
       {
         onSuccess: () => {
@@ -31,7 +31,12 @@ export function AssetImages({ assetCode, images = [] }) {
         {/* Upload Area */}
         <FileUpload
           onFilesSelected={handleFilesSelected}
-          accept="image/*"
+          accept={{
+            "image/png": [".png"],
+            "image/jpeg": [".jpg", ".jpeg"],
+            "image/webp": [".webp"],
+            "application/pdf": [".pdf"],
+          }}
           maxFiles={5}
           maxSize={10 * 1024 * 1024} // 10MB
           disabled={isPending}
@@ -47,7 +52,7 @@ export function AssetImages({ assetCode, images = [] }) {
               >
                 <img
                   src={image.image_url}
-                  alt={`Asset ${assetCode}`}
+                  alt={`Asset ${assetId}`}
                   className="w-full h-full object-cover"
                 />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">

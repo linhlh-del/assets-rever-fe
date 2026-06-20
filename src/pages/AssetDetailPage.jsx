@@ -1,10 +1,17 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/common/Button";
 import { Card } from "@/components/common/Card";
 import { Badge } from "@/components/common/Badge";
 import { Loading } from "@/components/common/Loading";
 import { AssetImages } from "@/components/assets/AssetImages";
+import { EditAssetModal } from "@/components/assets/EditAssetModal";
+import { AssignAssetModal } from "@/components/assets/AssignAssetModal";
+import { ReturnAssetModal } from "@/components/assets/ReturnAssetModal";
+import { DisposalAssetModal } from "@/components/assets/DisposalAssetModal";
 import { useAsset, useAssetAuditTrail } from "@/hooks/useAssets";
+import { usePermission } from "@/hooks/usePermission";
+import { formatVND } from "@/utils/formatters";
 import {
   ArrowLeft,
   Edit2,
@@ -33,19 +40,24 @@ const statusLabels = {
 export default function AssetDetailPage() {
   const { assetId } = useParams();
   const navigate = useNavigate();
+  const { canEditAsset, canAssignAsset, canDisposeAsset } = usePermission();
+
+  const [editingAsset, setEditingAsset] = useState(null);
+  const [assigningAsset, setAssigningAsset] = useState(null);
+  const [returningAsset, setReturningAsset] = useState(null);
+  const [disposingAsset, setDisposingAsset] = useState(null);
 
   const { data: asset, isLoading } = useAsset(assetId);
   const { data: auditTrail } = useAssetAuditTrail(assetId);
 
   if (isLoading) {
-    console.log("🔍 asset data:", asset);
     return <Loading />;
   }
   if (!asset)
     return <div className="text-center py-12">Không tìm thấy tài sản</div>;
 
-  const warrantyEndDate = asset.warranty_end_date
-    ? new Date(asset.warranty_end_date)
+  const warrantyEndDate = asset.warranty_expiry_date
+    ? new Date(asset.warranty_expiry_date)
     : null;
   const isWarrantyExpiring =
     warrantyEndDate && warrantyEndDate - new Date() < 30 * 24 * 60 * 60 * 1000;
@@ -94,7 +106,7 @@ export default function AssetDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Bộ phận</p>
                 <p className="font-semibold">
-                  {asset.current_department || asset.department || "-"}
+                  {asset.current_department_name || "-"}
                 </p>
               </div>
             </div>
@@ -107,20 +119,22 @@ export default function AssetDetailPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Giá mua</p>
                 <p className="font-semibold">
-                  {asset.purchase_price?.toLocaleString("vi-VN")} VNĐ
+                  {formatVND(asset.purchase_price)}
                 </p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground">Ngày mua</p>
                 <p className="font-semibold">
-                  {new Date(asset.purchase_date).toLocaleDateString("vi-VN")}
+                  {asset.purchase_date
+                    ? new Date(asset.purchase_date).toLocaleDateString("vi-VN")
+                    : "-"}
                 </p>
               </div>
             </div>
           </Card>
 
           {/* Warranty Info */}
-          {asset.warranty_end_date && (
+          {asset.warranty_expiry_date && (
             <Card
               className={
                 isWarrantyExpiring ? "border-yellow-200 bg-yellow-50" : ""
@@ -131,7 +145,7 @@ export default function AssetDetailPage() {
                 <div>
                   <p className="text-xs text-muted-foreground">Hết bảo hành</p>
                   <p className="font-semibold">
-                    {new Date(asset.warranty_end_date).toLocaleDateString(
+                    {new Date(asset.warranty_expiry_date).toLocaleDateString(
                       "vi-VN",
                     )}
                   </p>
@@ -156,8 +170,8 @@ export default function AssetDetailPage() {
 
           {/* Images */}
           <AssetImages
-            assetCode={asset.asset_code}
-            images={asset.asset_images}
+            assetId={asset.id}
+            images={asset.asset_images || []}
           />
 
           {/* Audit Trail */}
@@ -172,12 +186,14 @@ export default function AssetDetailPage() {
                   >
                     <div className="flex items-start justify-between mb-1">
                       <div>
-                        {/* ✅ Dùng trực tiếp full_name và employee_code từ bảng */}
                         <p className="font-medium text-sm">
-                          {item.full_name || item.employee_code || "Unknown"}
+                          {item.user_full_name ||
+                            item.full_name ||
+                            item.employee_code ||
+                            "Unknown"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {item.employee_code}
+                          {item.user_employee_code || item.employee_code}
                         </p>
                       </div>
                       <div className="text-right text-xs text-muted-foreground">
@@ -197,11 +213,6 @@ export default function AssetDetailPage() {
                         )}
                       </div>
                     </div>
-                    {item.department && (
-                      <p className="text-xs text-muted-foreground">
-                        {item.department}
-                      </p>
-                    )}
                     {item.notes && (
                       <p className="text-xs text-muted-foreground mt-1 italic">
                         {item.notes}
@@ -223,39 +234,45 @@ export default function AssetDetailPage() {
           {/* Actions */}
           <Card>
             <div className="space-y-2">
-              <Button
-                variant="primary"
-                className="w-full flex items-center gap-2"
-              >
-                <Edit2 className="w-4 h-4" />
-                Chỉnh sửa
-              </Button>
+              {canEditAsset && (
+                <Button
+                  variant="primary"
+                  className="w-full flex items-center gap-2"
+                  onClick={() => setEditingAsset(asset)}
+                >
+                  <Edit2 className="w-4 h-4" />
+                  Chỉnh sửa
+                </Button>
+              )}
 
-              {asset.status === "available" && (
+              {canAssignAsset && asset.status === "available" && (
                 <Button
                   variant="outline"
                   className="w-full flex items-center gap-2"
+                  onClick={() => setAssigningAsset(asset)}
                 >
                   <Send className="w-4 h-4" />
                   Phân công
                 </Button>
               )}
 
-              {asset.status === "in_use" && (
+              {canAssignAsset && asset.status === "in_use" && (
                 <Button
                   variant="outline"
                   className="w-full flex items-center gap-2"
+                  onClick={() => setReturningAsset(asset)}
                 >
                   <RotateCcw className="w-4 h-4" />
                   Thu hồi
                 </Button>
               )}
 
-              {asset.status !== "disposed" && (
+              {canDisposeAsset && asset.status !== "disposed" && (
                 <Button
                   variant="danger"
                   size="sm"
                   className="w-full flex items-center gap-2 text-xs"
+                  onClick={() => setDisposingAsset(asset)}
                 >
                   <Trash2 className="w-4 h-4" />
                   Thanh lý
@@ -283,7 +300,8 @@ export default function AssetDetailPage() {
                   <div>
                     <p className="text-xs text-muted-foreground">Người dùng</p>
                     <p className="font-semibold text-sm">
-                      {asset.current_user_employee_code}
+                      {asset.current_user_name ||
+                        asset.current_user_employee_code}
                     </p>
                   </div>
                 )}
@@ -308,6 +326,28 @@ export default function AssetDetailPage() {
           </Card>
         </div>
       </div>
+
+      {/* Modals */}
+      <EditAssetModal
+        isOpen={!!editingAsset}
+        onClose={() => setEditingAsset(null)}
+        asset={editingAsset}
+      />
+      <AssignAssetModal
+        isOpen={!!assigningAsset}
+        onClose={() => setAssigningAsset(null)}
+        asset={assigningAsset}
+      />
+      <ReturnAssetModal
+        isOpen={!!returningAsset}
+        onClose={() => setReturningAsset(null)}
+        asset={returningAsset}
+      />
+      <DisposalAssetModal
+        isOpen={!!disposingAsset}
+        onClose={() => setDisposingAsset(null)}
+        asset={disposingAsset}
+      />
     </div>
   );
 }

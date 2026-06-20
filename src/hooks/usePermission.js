@@ -15,6 +15,7 @@ export const usePermission = () => {
       canEditAsset: permissions.canEditAsset(role),
       canAssignAsset: permissions.canAssignAsset(role),
       canDisposeAsset: permissions.canDisposeAsset(role),
+      canDeleteAsset: permissions.canDeleteAsset(role),
       canViewAssetPrice: permissions.canViewAssetPrice(role),
       canManageInvoice: permissions.canManageInvoice(role),
       canCreateSlip: permissions.canCreateSlip(role),

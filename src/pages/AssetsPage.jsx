@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/common/Button";
 import { Loading } from "@/components/common/Loading";
-import { useAssets } from "@/hooks/useAssets";
+import { useAssets, useDeleteAsset } from "@/hooks/useAssets";
 import { AssetFilters } from "@/components/assets/AssetFilters";
 import { AssetsList } from "@/components/assets/AssetsList";
 import { AddAssetModal } from "@/components/assets/AddAssetModal";
@@ -12,6 +12,7 @@ import { ReturnAssetModal } from "@/components/assets/ReturnAssetModal";
 import { useCanCreateAsset, usePermission } from "@/hooks/usePermission";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AssetsPage() {
   const navigate = useNavigate();
@@ -43,6 +44,26 @@ export default function AssetsPage() {
     search: filters.search,
     status: filters.status,
   });
+
+  const { mutate: deleteAsset } = useDeleteAsset();
+
+  const handleDelete = (asset) => {
+    if (
+      !window.confirm(
+        `Bạn có chắc muốn xóa tài sản ${asset.asset_code}? Hành động này không thể hoàn tác.`,
+      )
+    ) {
+      return;
+    }
+    deleteAsset(asset.id, {
+      onSuccess: () => {
+        toast.success(`Đã xóa tài sản ${asset.asset_code}`);
+      },
+      onError: (err) => {
+        toast.error(`Lỗi xóa tài sản: ${err.message}`);
+      },
+    });
+  };
 
   // ─── Parse response ───────────────────────────────────────────────────────
   // getAssets() (sau Fix 1) return { assets: [...], pagination: { total, page, limit } }
@@ -140,8 +161,7 @@ export default function AssetsPage() {
             onEdit={setEditingAsset}
             onAssign={setAssigningAsset}
             onReturn={setReturningAsset}
-            onReport={() => {}}
-            onDispose={() => {}}
+            onDelete={handleDelete}
           />
         </div>
       )}

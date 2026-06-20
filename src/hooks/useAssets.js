@@ -71,8 +71,11 @@ export function useUpdateAsset() {
 
   return useMutation({
     mutationFn: ({ assetId, data }) => updateAsset(assetId, data),
-    onSuccess: () => {
+    onSuccess: (_, { assetId }) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      if (assetId) {
+        queryClient.invalidateQueries({ queryKey: ["assets", assetId] });
+      }
     },
   });
 }
@@ -96,8 +99,11 @@ export function useAssignAsset() {
   return useMutation({
     mutationFn: ({ assetId, employeeCode }) =>
       assignAsset(assetId, { employeeCode }),
-    onSuccess: () => {
+    onSuccess: (_, { assetId }) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      if (assetId) {
+        queryClient.invalidateQueries({ queryKey: ["assets", assetId] });
+      }
     },
   });
 }
@@ -109,8 +115,26 @@ export function useReturnAsset() {
   return useMutation({
     mutationFn: ({ assetId, returnNotes }) =>
       returnAsset(assetId, { returnNotes }),
-    onSuccess: () => {
+    onSuccess: (_, { assetId }) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      if (assetId) {
+        queryClient.invalidateQueries({ queryKey: ["assets", assetId] });
+      }
+    },
+  });
+}
+
+// ─── DISPOSE asset (update status to disposed) ────────────────────────────────
+export function useDisposeAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ assetId, data }) => updateAsset(assetId, data),
+    onSuccess: (_, { assetId }) => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      if (assetId) {
+        queryClient.invalidateQueries({ queryKey: ["assets", assetId] });
+      }
     },
   });
 }
@@ -120,9 +144,12 @@ export function useUploadAssetImages() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ assetCode, files }) => uploadAssetImages(assetCode, files),
-    onSuccess: () => {
+    mutationFn: ({ assetId, files }) => uploadAssetImages(assetId, files),
+    onSuccess: (_, { assetId }) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
+      if (assetId) {
+        queryClient.invalidateQueries({ queryKey: ["assets", assetId] });
+      }
     },
   });
 }

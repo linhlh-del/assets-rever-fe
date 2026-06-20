@@ -27,6 +27,15 @@ export const useInvoiceSummary = () => {
   })
 }
 
+export const useInvoiceOptions = () => {
+  return useQuery({
+    queryKey: ['invoices', 'options'],
+    queryFn: () => invoiceService.getInvoices({ limit: 100 }),
+    select: (result) => result?.data || [],
+    staleTime: 5 * 60 * 1000,
+  })
+}
+
 export const useUploadInvoiceFile = () => {
   return useMutation({
     mutationFn: ({ file, invoiceNumber }) => 
