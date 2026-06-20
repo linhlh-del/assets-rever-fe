@@ -73,18 +73,25 @@ export default function AssetsPage() {
   const total = pagination.total || 0;
 
   // Role "user" chỉ thấy tài sản đang dùng của mình
-  // Lý tưởng nhất là filter ở BE (gửi thêm param employee_code),
-  // nhưng hiện tại BE chưa support → filter ở FE tạm thời
+  // 🔧 BUG-013: Loại bỏ tài sản thanh lý khỏi danh sách mặc định (khi không filter status)
+  // Nếu user chọn status filter, dùng API filter — không lọc FE
+  const shouldHideDisposed = !filters.status; // ẩn disposed chỉ khi không có status filter
+
   const assets =
     role === "user" && user
       ? rawAssets.filter(
-          (a) => a.current_user_employee_code === user.employee_code,
+          (a) =>
+            a.current_user_employee_code === user.employee_code &&
+            (shouldHideDisposed ? a.status !== "disposed" : true),
         )
-      : rawAssets;
+      : shouldHideDisposed
+        ? rawAssets.filter((a) => a.status !== "disposed")
+        : rawAssets;
 
   // Nếu filter FE thì total sẽ sai so với số thật trên DB,
   // nhưng chấp nhận được cho đến khi BE hỗ trợ filter theo employee
-  const displayTotal = role === "user" ? assets.length : total;
+  const displayTotal =
+    role === "user" || shouldHideDisposed ? assets.length : total;
   const totalPages = Math.max(1, Math.ceil(displayTotal / filters.limit));
 
   // ─── Auth guard ───────────────────────────────────────────────────────────
