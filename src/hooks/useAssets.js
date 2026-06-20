@@ -9,6 +9,7 @@ import {
   assignAsset,
   returnAsset,
   uploadAssetImages,
+  deleteAssetImage, // thêm dòng này
 } from "@/services/assetService";
 
 // ─── GET assets ───────────────────────────────────────────────────────────────
@@ -145,6 +146,20 @@ export function useUploadAssetImages() {
 
   return useMutation({
     mutationFn: ({ assetId, files }) => uploadAssetImages(assetId, files),
+    onSuccess: (_, { assetId }) => {
+      queryClient.invalidateQueries({ queryKey: ["assets"] });
+      if (assetId) {
+        queryClient.invalidateQueries({ queryKey: ["assets", assetId] });
+      }
+    },
+  });
+}
+// ─── DELETE asset image ───────────────────────────────────────────────────────
+export function useDeleteAssetImage() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ assetId, imageId }) => deleteAssetImage(assetId, imageId),
     onSuccess: (_, { assetId }) => {
       queryClient.invalidateQueries({ queryKey: ["assets"] });
       if (assetId) {

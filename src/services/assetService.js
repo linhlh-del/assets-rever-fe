@@ -86,3 +86,10 @@ export const uploadAssetImages = async (assetId, files = []) => {
   if (!response.ok) throw new Error(`Upload failed: ${response.status}`);
   return response.json();
 };
+
+export const deleteAssetImage = async (assetId, imageId) => {
+  const res = await apiClient.delete(
+    `/api/assets/${assetId}/images/${imageId}`,
+  );
+  return res?.data;
+};

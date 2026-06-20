@@ -99,7 +99,7 @@ export function AssetForm({
 
   const handleFilesSelected = (files) => {
     if (onImagesChange) {
-      onImagesChange([...pendingImages, ...files].slice(0, 5));
+      onImagesChange([...pendingImages, ...files].slice(0, 10)); // giới hạn 10 files
     }
   };
 
@@ -245,7 +245,7 @@ export function AssetForm({
               "image/webp": [".webp"],
               "application/pdf": [".pdf"],
             }}
-            maxFiles={5}
+            maxFiles={10}
             maxSize={10 * 1024 * 1024}
             disabled={isLoading}
             helperText="Ảnh sẽ được tải lên sau khi tạo tài sản thành công"
