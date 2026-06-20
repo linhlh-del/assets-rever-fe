@@ -2,27 +2,35 @@ import { useState } from 'react'
 import { PageHeader } from '@/components/common/PageHeader'
 import { Button } from '@/components/common/Button'
 import { Pagination } from '@/components/common/Pagination'
-import { useMaintenance } from '@/hooks/useMaintenance'
+import { useMaintenance, useReportMaintenanceIssue } from '@/hooks/useMaintenance'
 import { usePermission } from '@/hooks/usePermission'
 import { useToast } from '@/hooks/useToast'
+import { useAssets } from '@/hooks/useAssets'
 import { MaintenanceFilters } from '@/components/maintenance/MaintenanceFilters'
 import { MaintenanceList } from '@/components/maintenance/MaintenanceList'
 import { MaintenanceDetailModal } from '@/components/maintenance/MaintenanceDetailModal'
 import { Plus } from 'lucide-react'
 
 // Simple Create Modal for Maintenance
-function CreateMaintenanceModal({ isOpen, onClose, assets, onSuccess }) {
+function CreateMaintenanceModal({ isOpen, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
-    asset_code: '',
+    asset_id: '',
     issue_type: 'hardware',
     description: '',
     priority: 'medium',
   })
-  const { mutate: create, isPending } = useMaintenance()
+  const { mutate: create, isPending } = useReportMaintenanceIssue()
+  // Load assets for dropdown
+  const { data: assetsData } = useAssets({ limit: 200 })
+  const assets = assetsData?.assets || []
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    create(formData, {
+    create({
+      asset_id: formData.asset_id,
+      issue_description: formData.description,
+      priority: formData.priority,
+    }, {
       onSuccess: () => {
         onClose()
         onSuccess?.()
@@ -38,14 +46,14 @@ function CreateMaintenanceModal({ isOpen, onClose, assets, onSuccess }) {
           <div>
             <label className="text-sm font-medium">Tài sản</label>
             <select
-              value={formData.asset_code}
-              onChange={(e) => setFormData({ ...formData, asset_code: e.target.value })}
+              value={formData.asset_id}
+              onChange={(e) => setFormData({ ...formData, asset_id: e.target.value })}
               className="w-full px-3 py-2 border rounded-md text-sm"
               required
             >
               <option value="">Chọn tài sản</option>
               {assets.map(a => (
-                <option key={a.asset_code} value={a.asset_code}>
+                <option key={a.id} value={a.id}>
                   {a.asset_code} - {a.product_name}
                 </option>
               ))}
@@ -158,7 +166,7 @@ export default function MaintenancePage() {
       <MaintenanceFilters filters={filters} onFiltersChange={setFilters} />
 
       <MaintenanceList
-        records={data?.records || []}
+        records={data?.data || []}
         isLoading={isLoading}
         onView={handleViewRecord}
       />
@@ -174,7 +182,6 @@ export default function MaintenancePage() {
       <CreateMaintenanceModal
         isOpen={showCreateModal}
         onClose={() => setShowCreateModal(false)}
-        assets={data?.available_assets || []}
         onSuccess={handleCreateSuccess}
       />
 

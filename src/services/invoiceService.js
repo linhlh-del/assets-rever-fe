@@ -1,139 +1,74 @@
-import { supabase } from '@/services/api'
+import { apiClient, supabase } from '@/services/api'
 
-// Upload invoice file
-export const uploadInvoiceFile = async (file, invoiceNumber) => {
-  const fileName = `${invoiceNumber}/${Date.now()}-${file.name}`
-  
-  const { error: uploadError } = await supabase
-    .storage
-    .from('invoices')
-    .upload(fileName, file)
-  
-  if (uploadError) throw uploadError
-  
-  const { data } = supabase
-    .storage
-    .from('invoices')
-    .getPublicUrl(fileName)
-  
-  return data.publicUrl
-}
-
-// Create invoice
-export const createInvoice = async (invoiceData) => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .insert([invoiceData])
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
-}
-
-// Get invoices with filters
+// Get invoices with filters and pagination
 export const getInvoices = async ({
   search = '',
-  vendor = null,
-  status = null,
   page = 1,
   limit = 20,
 } = {}) => {
-  let query = supabase
-    .from('invoices')
-    .select(`
-      *,
-      invoice_files(file_url, file_type)
-    `, { count: 'exact' })
-  
-  if (search) {
-    query = query.or(
-      `invoice_number.ilike.%${search}%,vendor_name.ilike.%${search}%`
-    )
-  }
-  
-  if (vendor) {
-    query = query.eq('vendor_name', vendor)
-  }
-  
-  if (status) {
-    query = query.eq('status', status)
-  }
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  })
+  if (search?.trim()) params.set('search', search.trim())
 
-  const offset = (page - 1) * limit
-  query = query.range(offset, offset + limit - 1)
-  
-  const { data, error, count } = await query
-  
-  if (error) throw error
-  
+  const res = await apiClient.get(`/api/invoices?${params}`)
   return {
-    data: data || [],
-    total: count || 0,
+    data: res?.data?.invoices || [],
+    total: res?.data?.pagination?.total || 0,
     page,
     limit,
   }
 }
 
-// Get single invoice
+// Get single invoice by invoice_number
 export const getInvoice = async (invoiceNumber) => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .select(`
-      *,
-      invoice_files(file_url, file_type),
-      assets(asset_code, product_name, quantity, unit_price)
-    `)
-    .eq('invoice_number', invoiceNumber)
-    .single()
-  
-  if (error) throw error
-  return data
+  const res = await apiClient.get(`/api/invoices/${invoiceNumber}`)
+  return res?.data?.invoice || null
+}
+
+// Create invoice
+export const createInvoice = async (invoiceData) => {
+  const res = await apiClient.post('/api/invoices', invoiceData)
+  return res?.data?.invoice
 }
 
 // Update invoice
 export const updateInvoice = async (invoiceNumber, invoiceData) => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .update(invoiceData)
-    .eq('invoice_number', invoiceNumber)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
+  const res = await apiClient.put(`/api/invoices/${invoiceNumber}`, invoiceData)
+  return res?.data?.invoice
 }
 
-// Confirm invoice
-export const confirmInvoice = async (invoiceNumber) => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .update({
-      status: 'confirmed',
-      confirmed_date: new Date().toISOString(),
-    })
-    .eq('invoice_number', invoiceNumber)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
+// Delete invoice
+export const deleteInvoice = async (invoiceNumber) => {
+  const res = await apiClient.delete(`/api/invoices/${invoiceNumber}`)
+  return res?.data
 }
 
-// Get invoice summary
+// Upload invoice file — vẫn dùng Supabase Storage (đúng)
+export const uploadInvoiceFile = async (file, invoiceNumber) => {
+  const fileName = `invoices/${invoiceNumber}/${Date.now()}-${file.name}`
+
+  const { error: uploadError } = await supabase
+    .storage
+    .from('invoices')
+    .upload(fileName, file)
+
+  if (uploadError) throw uploadError
+
+  const { data } = supabase
+    .storage
+    .from('invoices')
+    .getPublicUrl(fileName)
+
+  return data.publicUrl
+}
+
+// Get invoice summary (computed from list)
 export const getInvoiceSummary = async () => {
-  const { data, error } = await supabase
-    .from('invoices')
-    .select('total_amount, status', { count: 'exact' })
-  
-  if (error) throw error
-  
+  const { data } = await getInvoices({ limit: 1000 })
   return {
-    totalAmount: data.reduce((sum, inv) => sum + (inv.total_amount || 0), 0),
+    totalAmount: data.reduce((sum, inv) => sum + Number(inv.total_amount || 0), 0),
     totalCount: data.length,
-    byStatus: data.reduce((acc, inv) => ({
-      ...acc,
-      [inv.status]: (acc[inv.status] || 0) + 1,
-    }), {}),
   }
 }

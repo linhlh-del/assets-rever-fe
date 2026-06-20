@@ -1,4 +1,4 @@
-import { apiClient } from "@/services/api";
+import { apiClient, supabase } from "@/services/api";
 
 // Chuẩn hóa: apiClient trả về JSON body trực tiếp
 // BE format: { success: true, data: { ... } }
@@ -70,7 +70,7 @@ export const returnAsset = async (assetId, { returnNotes } = {}) => {
 export const uploadAssetImages = async (assetId, files = []) => {
   const {
     data: { session },
-  } = await import("@/services/api").then((m) => m.supabase.auth.getSession());
+  } = await supabase.auth.getSession();
   const formData = new FormData();
   files.forEach((file) => formData.append("images", file));
 

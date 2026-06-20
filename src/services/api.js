@@ -62,18 +62,7 @@ export const apiClient = {
       if (import.meta.env.DEV) {
         console.log(`📡 ${options.method || "GET"} ${endpoint}`);
       }
-      // if (session?.access_token) {
-      //   config.headers.Authorization = `Bearer ${session.access_token}`;
-      //   // console.log("🔑 Request with token");
-      //   // console.log("🔍 Token info:", {
-      //   //   access_token: session.access_token,
-      //   //   user: session.user,
-      //   // });
-      // } else {
-      //   console.warn("⚠️  No session token");
-      // }
 
-      // console.log(`📡 ${options.method || "GET"} ${endpoint}`);
 
       const response = await fetch(url, config);
 
@@ -143,7 +132,9 @@ export const apiClient = {
       }
 
       const data = await response.json();
-      console.log(`✅ ${options.method || "GET"} ${endpoint} - Success`);
+      if (import.meta.env.DEV) {
+        console.log(`✅ ${options.method || "GET"} ${endpoint} - Success`);
+      }
       return data;
     } catch (error) {
       pendingRequests.delete(requestKey);

@@ -34,3 +34,12 @@ export const formatPhone = (phone) => {
   if (!phone) return '-'
   return phone.replace(/(\d{4})(\d{3})(\d{3})/, '$1 $2 $3')
 }
+
+/**
+ * Format giá tiền VNĐ từ Postgres numeric(15,2) string
+ * Xử lý cả string "20000000.00" và number 20000000
+ */
+export const formatVND = (value) => {
+  if (!value && value !== 0) return '—'
+  return new Intl.NumberFormat('vi-VN').format(parseFloat(value)) + ' ₫'
+}

@@ -1,109 +1,66 @@
-import { supabase } from '@/services/api'
+import { apiClient } from '@/services/api'
 
-// Upload assignment slip
-export const createAssignmentSlip = async (slipData) => {
-  const { data, error } = await supabase
-    .from('assignment_slips')
-    .insert([{
-      slip_number: slipData.slipNumber,
-      asset_code: slipData.assetCode,
-      from_user_employee_code: slipData.fromUser,
-      to_user_employee_code: slipData.toUser,
-      from_department: slipData.fromDepartment,
-      to_department: slipData.toDepartment,
-      transferred_date: new Date().toISOString(),
-      notes: slipData.notes,
-      status: 'pending',
-    }])
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
-}
-
-// Get assignment slips
+// Get handover/return slips (formerly "assignment_slips")
 export const getAssignmentSlips = async ({
   status = null,
-  asset = null,
+  slip_type = null,
   page = 1,
   limit = 20,
 } = {}) => {
-  let query = supabase
-    .from('assignment_slips')
-    .select(`
-      *,
-      assets(asset_code, product_name)
-    `, { count: 'exact' })
-  
-  if (status) {
-    query = query.eq('status', status)
-  }
-  
-  if (asset) {
-    query = query.eq('asset_code', asset)
-  }
+  const params = new URLSearchParams({
+    page: page.toString(),
+    limit: limit.toString(),
+  })
+  if (status) params.set('status', status)
+  if (slip_type) params.set('slip_type', slip_type)
 
-  const offset = (page - 1) * limit
-  query = query.range(offset, offset + limit - 1)
-  
-  const { data, error, count } = await query
-    .order('transferred_date', { ascending: false })
-  
-  if (error) throw error
-  
+  const res = await apiClient.get(`/api/handover?${params}`)
   return {
-    data: data || [],
-    total: count || 0,
+    data: res?.data?.slips || [],
+    total: res?.data?.pagination?.total || 0,
     page,
     limit,
   }
 }
 
 // Get single slip
-export const getAssignmentSlip = async (slipNumber) => {
-  const { data, error } = await supabase
-    .from('assignment_slips')
-    .select(`
-      *,
-      assets(asset_code, product_name, serial_number)
-    `)
-    .eq('slip_number', slipNumber)
-    .single()
-  
-  if (error) throw error
-  return data
+export const getAssignmentSlip = async (slipId) => {
+  const res = await apiClient.get(`/api/handover/${slipId}`)
+  return res?.data?.slip || null
 }
 
-// Approve slip
-export const approveAssignmentSlip = async (slipNumber) => {
-  const { data, error } = await supabase
-    .from('assignment_slips')
-    .update({
-      status: 'approved',
-      approved_date: new Date().toISOString(),
-    })
-    .eq('slip_number', slipNumber)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
+// Create handover slip
+export const createAssignmentSlip = async (slipData) => {
+  const res = await apiClient.post('/api/handover', {
+    to_employee_code: slipData.toUser || slipData.to_employee_code,
+    asset_ids: slipData.asset_ids || (slipData.assetCode ? [slipData.assetCode] : []),
+    notes: slipData.notes || null,
+  })
+  return res?.data?.slip
 }
 
-// Receive slip (recipient confirms)
-export const confirmSlipReceipt = async (slipNumber, confirmData) => {
-  const { data, error } = await supabase
-    .from('assignment_slips')
-    .update({
-      status: 'received',
-      received_date: new Date().toISOString(),
-      received_by_notes: confirmData.notes,
-    })
-    .eq('slip_number', slipNumber)
-    .select()
-    .single()
-  
-  if (error) throw error
-  return data
+// Create return slip
+export const createReturnSlip = async (slipData) => {
+  const res = await apiClient.post('/api/handover/return', {
+    asset_ids: slipData.asset_ids || [],
+    notes: slipData.notes || null,
+  })
+  return res?.data?.slip
+}
+
+// Approve/sign slip (change status)
+export const approveAssignmentSlip = async (slipId) => {
+  const res = await apiClient.patch(`/api/handover/${slipId}/status`, {
+    status: 'signed',
+  })
+  return res?.data?.slip
+}
+
+// Confirm receipt
+export const confirmSlipReceipt = async (slipId, confirmData = {}) => {
+  const res = await apiClient.patch(`/api/handover/${slipId}/status`, {
+    status: 'received',
+    notes: confirmData.notes || null,
+  })
+  return res?.data?.slip
 }

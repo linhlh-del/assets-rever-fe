@@ -75,9 +75,9 @@ export const generateAssetTransferSlip = async (slipData) => {
 /**
  * Generate PDF for asset disposal report
  */
-export const generateDisposalReport = (assets) => {
-  const { jsPDF } = require('jspdf')
-  require('jspdf-autotable')
+export const generateDisposalReport = async (assets) => {
+  const { jsPDF } = await import('jspdf')
+  await import('jspdf-autotable')
   
   const doc = new jsPDF()
   
@@ -87,7 +87,7 @@ export const generateDisposalReport = (assets) => {
   const tableData = assets.map(asset => [
     asset.asset_code,
     asset.product_name,
-    asset.purchase_price.toLocaleString('vi-VN'),
+    parseFloat(asset.purchase_price || 0).toLocaleString('vi-VN'),
     new Date(asset.disposal_date).toLocaleDateString('vi-VN'),
     asset.disposal_reason,
   ])
@@ -104,8 +104,8 @@ export const generateDisposalReport = (assets) => {
 /**
  * Generate maintenance completion certificate
  */
-export const generateMaintenanceCertificate = (ticket) => {
-  const { jsPDF } = require('jspdf')
+export const generateMaintenanceCertificate = async (ticket) => {
+  const { jsPDF } = await import('jspdf')
   
   const doc = new jsPDF()
   
@@ -114,14 +114,14 @@ export const generateMaintenanceCertificate = (ticket) => {
   
   doc.setFontSize(11)
   doc.text(`ID phiếu: ${ticket.id}`, 20, 30)
-  doc.text(`Tài sản: ${ticket.assets.product_name}`, 20, 38)
-  doc.text(`Serial: ${ticket.assets.serial_number}`, 20, 46)
+  doc.text(`Tài sản: ${ticket.product_name || ticket.assets?.product_name || ''}`, 20, 38)
+  doc.text(`Serial: ${ticket.serial_number || ticket.assets?.serial_number || ''}`, 20, 46)
   doc.text(`Vấn đề: ${ticket.issue_description}`, 20, 54)
   doc.text(`Ngày báo cáo: ${new Date(ticket.created_at).toLocaleDateString('vi-VN')}`, 20, 62)
   
-  if (ticket.status === 'closed') {
+  if (ticket.status === 'completed' || ticket.status === 'closed') {
     doc.text(`Ngày hoàn tất: ${new Date(ticket.resolved_at).toLocaleDateString('vi-VN')}`, 20, 70)
-    doc.text(`Ghi chú: ${ticket.resolution_notes}`, 20, 78)
+    doc.text(`Ghi chú: ${ticket.solution || ticket.resolution_notes || ''}`, 20, 78)
   }
   
   return doc

@@ -8,7 +8,7 @@ import { useTheme } from '@/contexts/ThemeContext'
 import { Moon, Sun, LogOut, Lock, Bell, Eye } from 'lucide-react'
 
 export default function SettingsPage() {
-  const { user, logout } = useAuth()
+  const { user, signOut } = useAuth()
   const { theme, setTheme } = useTheme()
   const [settings, setSettings] = useState({
     email_notifications: true,
@@ -238,7 +238,7 @@ export default function SettingsPage() {
           </div>
           <Button
             variant="destructive"
-            onClick={logout}
+            onClick={signOut}
             className="flex items-center gap-2"
           >
             <LogOut className="w-4 h-4" />
