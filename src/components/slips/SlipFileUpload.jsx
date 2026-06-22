@@ -1,6 +1,3 @@
-// FIXED BUG-04: handleDownloadTemplate không check null data?.url
-// Nếu BE chưa setup bucket handover-templates → user thấy không có gì xảy ra
-// Fix: toast.error rõ ràng khi url null
 import { useState } from "react";
 import { FileUpload } from "@/components/common/FileUpload";
 import { Button } from "@/components/common/Button";
@@ -25,6 +22,7 @@ const FILE_ICONS = {
   "image/png": "🖼️",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
     "📝",
+  "application/msword": "📝",
 };
 
 function FileRow({ file, onDelete, canDelete }) {
@@ -33,6 +31,18 @@ function FileRow({ file, onDelete, canDelete }) {
   const icon = FILE_ICONS[file.file_type] || "📎";
   const isImage = file.file_type?.startsWith("image/");
   const isPdf = file.file_type === "application/pdf";
+  const isWord = [
+    "application/msword",
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  ].includes(file.file_type);
+
+  const handleDownload = () => {
+    const a = document.createElement("a");
+    a.href = file.file_url;
+    a.download = file.file_name;
+    a.target = "_blank";
+    a.click();
+  };
 
   return (
     <>
@@ -55,11 +65,17 @@ function FileRow({ file, onDelete, canDelete }) {
                   {FILE_KIND_LABELS[file.file_kind] || file.file_kind}
                 </span>
               )}
+              {isWord && (
+                <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded font-medium">
+                  Word
+                </span>
+              )}
             </div>
           </div>
         </div>
 
         <div className="flex items-center gap-1 flex-shrink-0 ml-3">
+          {/* Preview chỉ cho image và PDF */}
           {(isImage || isPdf) && (
             <Button
               variant="ghost"
@@ -71,20 +87,18 @@ function FileRow({ file, onDelete, canDelete }) {
               <Eye className="w-4 h-4 text-gray-500" />
             </Button>
           )}
+
+          {/* Download cho tất cả loại file */}
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => {
-              const a = document.createElement("a");
-              a.href = file.file_url;
-              a.download = file.file_name;
-              a.click();
-            }}
-            title="Tải xuống"
+            onClick={handleDownload}
+            title={isWord ? "Tải xuống file Word" : "Tải xuống"}
             className="p-1.5"
           >
             <Download className="w-4 h-4 text-gray-500" />
           </Button>
+
           {canDelete && (
             <Button
               variant="ghost"
@@ -99,7 +113,8 @@ function FileRow({ file, onDelete, canDelete }) {
         </div>
       </div>
 
-      {previewing && (
+      {/* Preview modal chỉ cho image và PDF */}
+      {previewing && (isImage || isPdf) && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
           onClick={() => setPreviewing(false)}
@@ -175,8 +190,6 @@ export function SlipFileUpload({
     );
   };
 
-  // BUG-04 FIX: kiểm tra data?.url và toast lỗi rõ ràng
-  // Trước: nếu data null hoặc không có url → user không biết gì xảy ra
   const handleDownloadTemplate = () => {
     downloadTemplate(undefined, {
       onSuccess: (data) => {
@@ -233,13 +246,14 @@ export function SlipFileUpload({
               "application/pdf": [".pdf"],
               "image/jpeg": [".jpg", ".jpeg"],
               "image/png": [".png"],
+              "application/msword": [".doc"],
               "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
                 [".docx"],
             }}
             maxFiles={5}
             maxSize={20 * 1024 * 1024}
             disabled={isUploading || isDeleting}
-            helperText="PDF, JPG, PNG, DOCX — Tối đa 20MB/file"
+            helperText="PDF, JPG, PNG, DOC, DOCX — Tối đa 20MB/file"
           />
           {isUploading && (
             <p className="text-xs text-blue-600 mt-2 flex items-center gap-1.5">
