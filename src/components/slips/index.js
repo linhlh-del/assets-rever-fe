@@ -1,5 +1,8 @@
-export { default as SlipFilters } from "./SlipFilters";
-export { default as SlipsList } from "./SlipsList";
-export { default as AddSlipModal } from "./AddSlipModal";
-export { default as EditSlipModal } from "./EditSlipModal";
-export { default as SlipDetailModal } from "./SlipDetailModal";
+// src/components/slips/index.js
+// UPDATED: Thêm SlipFileUpload export
+export { SlipFileUpload } from "./SlipFileUpload";
+export { SlipFilters } from "./SlipFilters";
+export { SlipsList } from "./SlipsList";
+export { AddSlipModal } from "./AddSlipModal";
+export { EditSlipModal } from "./EditSlipModal";
+export { SlipDetailModal } from "./SlipDetailModal";

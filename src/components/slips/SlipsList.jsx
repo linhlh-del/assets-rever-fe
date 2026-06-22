@@ -1,10 +1,12 @@
-// FIXED: SLIP-01 (sai field names), SLIP-03 (sai status), SLIP-04 (điều kiện nút Edit),
-//        SLIP-13 (bỏ ResponsiveTable, dùng <table> HTML thủ công nhất quán với MaintenanceList)
+// src/components/slips/SlipsList.jsx
+// UPDATED: Thêm nút email (Module 2) vào cột Thao tác
+// FIXED: SLIP-01, SLIP-03, SLIP-04, SLIP-13 (giữ nguyên từ lần fix trước)
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
-import { Edit2, Eye } from "lucide-react";
+import { useSendSlipEmail } from "@/hooks/useSlips";
+import { Edit2, Eye, Mail, CheckCircle } from "lucide-react";
 
-// SLIP-03: Đổi từ pending/approved/rejected → draft/generated/signed
+// SLIP-03: draft | generated | signed
 const statusColors = {
   draft: "secondary",
   generated: "default",
@@ -17,12 +19,41 @@ const statusLabels = {
   signed: "Đã ký",
 };
 
-// SLIP-01: Thêm label loại phiếu
 const slipTypeLabels = {
   handover: "Bàn giao",
   return: "Thu hồi",
   transfer: "Chuyển giao",
 };
+
+// Row-level email button component — giữ state loading riêng mỗi row
+function EmailButton({ slip }) {
+  const { mutate: sendEmail, isPending } = useSendSlipEmail();
+
+  // Chỉ hiển thị với handover slips
+  if (slip.slip_type !== "handover") return null;
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={() => sendEmail(slip.id)}
+      loading={isPending}
+      className="p-1"
+      title={
+        slip.email_sent_at
+          ? `Gửi lại email (đã gửi ${new Date(slip.email_sent_at).toLocaleDateString("vi-VN")})`
+          : "Gửi email thông báo cho nhân viên"
+      }
+    >
+      {/* Hiển thị icon khác nhau nếu đã gửi email trước đó */}
+      {slip.email_sent_at && !isPending ? (
+        <CheckCircle className="w-4 h-4 text-green-500" />
+      ) : (
+        <Mail className="w-4 h-4" />
+      )}
+    </Button>
+  );
+}
 
 export function SlipsList({ slips, isLoading, onEdit, onView }) {
   if (isLoading) {
@@ -37,11 +68,11 @@ export function SlipsList({ slips, isLoading, onEdit, onView }) {
     <div className="overflow-x-auto">
       <table className="w-full">
         <thead>
-          <tr className="border-b">
+          <tr className="border-b bg-muted/30">
             <th className="px-4 py-3 text-left text-sm font-semibold">
               Số phiếu
             </th>
-            {/* SLIP-01: Hiển thị items[0] thay vì asset_name không tồn tại */}
+            {/* SLIP-01: items[0] thay vì asset_name */}
             <th className="px-4 py-3 text-left text-sm font-semibold">
               Tài sản
             </th>
@@ -49,7 +80,7 @@ export function SlipsList({ slips, isLoading, onEdit, onView }) {
             <th className="px-4 py-3 text-left text-sm font-semibold">
               Người nhận
             </th>
-            {/* SLIP-01: Thêm cột loại phiếu */}
+            {/* SLIP-01: Cột loại phiếu */}
             <th className="px-4 py-3 text-left text-sm font-semibold">Loại</th>
             {/* SLIP-01: created_at thay vì created_date */}
             <th className="px-4 py-3 text-left text-sm font-semibold">
@@ -58,7 +89,8 @@ export function SlipsList({ slips, isLoading, onEdit, onView }) {
             <th className="px-4 py-3 text-left text-sm font-semibold">
               Trạng thái
             </th>
-            <th className="px-4 py-3 text-left text-sm font-semibold w-28">
+            {/* Cột thao tác — rộng hơn để chứa 3 nút */}
+            <th className="px-4 py-3 text-left text-sm font-semibold w-32">
               Thao tác
             </th>
           </tr>
@@ -70,17 +102,17 @@ export function SlipsList({ slips, isLoading, onEdit, onView }) {
               className="border-b hover:bg-muted/50 transition-colors"
             >
               {/* Số phiếu */}
-              <td className="px-4 py-3 text-sm font-medium">
+              <td className="px-4 py-3 text-sm font-medium text-primary">
                 {slip.slip_number}
               </td>
 
-              {/* SLIP-01: Tài sản từ items[] thay vì asset_name */}
+              {/* SLIP-01: Tài sản từ items[] */}
               <td className="px-4 py-3 text-sm">
                 {slip.items && slip.items.length > 0 ? (
                   <span>
                     {slip.items[0].asset_code} – {slip.items[0].product_name}
                     {slip.items.length > 1 && (
-                      <span className="ml-1 text-muted-foreground">
+                      <span className="ml-1 text-muted-foreground text-xs">
                         (+{slip.items.length - 1})
                       </span>
                     )}
@@ -90,35 +122,36 @@ export function SlipsList({ slips, isLoading, onEdit, onView }) {
                 )}
               </td>
 
-              {/* SLIP-01: to_user_name / to_employee_code thay vì assigned_to_name */}
+              {/* SLIP-01: to_user_name / to_employee_code */}
               <td className="px-4 py-3 text-sm">
                 {slip.to_user_name || slip.to_employee_code || (
                   <span className="text-muted-foreground">—</span>
                 )}
               </td>
 
-              {/* SLIP-01: Loại phiếu từ slip_type */}
+              {/* SLIP-01: Loại phiếu */}
               <td className="px-4 py-3 text-sm">
                 {slipTypeLabels[slip.slip_type] || slip.slip_type}
               </td>
 
-              {/* SLIP-01: created_at thay vì created_date */}
+              {/* SLIP-01: created_at */}
               <td className="px-4 py-3 text-sm text-muted-foreground">
                 {slip.created_at
                   ? new Date(slip.created_at).toLocaleDateString("vi-VN")
                   : "—"}
               </td>
 
-              {/* SLIP-03: statusColors/statusLabels đúng theo draft/generated/signed */}
+              {/* SLIP-03: statusColors đúng */}
               <td className="px-4 py-3 text-sm">
                 <Badge variant={statusColors[slip.status]}>
                   {statusLabels[slip.status] || slip.status}
                 </Badge>
               </td>
 
-              {/* Thao tác */}
+              {/* Thao tác: [👁 Xem] [✏ Ký] [📧 Email] */}
               <td className="px-4 py-3 text-sm">
-                <div className="flex gap-2">
+                <div className="flex items-center gap-1">
+                  {/* Xem chi tiết */}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -129,7 +162,7 @@ export function SlipsList({ slips, isLoading, onEdit, onView }) {
                     <Eye className="w-4 h-4" />
                   </Button>
 
-                  {/* SLIP-04: Điều kiện đúng — "generated" thay vì "pending" (không tồn tại) */}
+                  {/* SLIP-04: Điều kiện "generated" — nút ký phiếu */}
                   {slip.status === "generated" && (
                     <Button
                       variant="ghost"
@@ -141,6 +174,9 @@ export function SlipsList({ slips, isLoading, onEdit, onView }) {
                       <Edit2 className="w-4 h-4" />
                     </Button>
                   )}
+
+                  {/* MODULE 2: Email button — chỉ handover */}
+                  <EmailButton slip={slip} />
                 </div>
               </td>
             </tr>
