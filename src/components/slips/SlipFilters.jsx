@@ -1,12 +1,22 @@
+// FIXED: SLIP-03 (sai status values: pending/approved/rejected → draft/generated/signed)
+//        SLIP-08 (bỏ dateFrom/dateTo — BE không hỗ trợ filter này, tránh false UX)
+//        Chọn Option A: loại bỏ date filters thay vì để người dùng lọc mà không có kết quả
 import { Input } from "@/components/common/Input";
 import { Select } from "@/components/common/Select";
 import { Button } from "@/components/common/Button";
 import { Search, X } from "lucide-react";
 
+// SLIP-03: Đúng theo schema BE: draft | generated | signed
 const SLIP_STATUSES = [
-  { value: "pending", label: "Chờ duyệt" },
-  { value: "approved", label: "Đã duyệt" },
-  { value: "rejected", label: "Từ chối" },
+  { value: "draft", label: "Bản nháp" },
+  { value: "generated", label: "Đã tạo" },
+  { value: "signed", label: "Đã ký" },
+];
+
+const SLIP_TYPES = [
+  { value: "handover", label: "Bàn giao" },
+  { value: "return", label: "Thu hồi" },
+  { value: "transfer", label: "Chuyển giao" },
 ];
 
 export function SlipFilters({ filters, onFiltersChange }) {
@@ -18,34 +28,32 @@ export function SlipFilters({ filters, onFiltersChange }) {
     onFiltersChange({ ...filters, status: value || null, page: 1 });
   };
 
-  const handleDateFromChange = (value) => {
-    onFiltersChange({ ...filters, dateFrom: value || null, page: 1 });
-  };
-
-  const handleDateToChange = (value) => {
-    onFiltersChange({ ...filters, dateTo: value || null, page: 1 });
+  // Thêm filter theo loại phiếu — BE hỗ trợ slip_type filter
+  const handleSlipTypeChange = (value) => {
+    onFiltersChange({ ...filters, slip_type: value || null, page: 1 });
   };
 
   const handleReset = () => {
     onFiltersChange({
       search: "",
       status: null,
-      dateFrom: null,
-      dateTo: null,
+      slip_type: null,
       page: 1,
+      limit: filters.limit || 20,
     });
   };
 
+  // SLIP-08: Đã bỏ dateFrom/dateTo — BE không hỗ trợ, không nên hiển thị filter giả
   const hasActiveFilters =
-    filters.search || filters.status || filters.dateFrom || filters.dateTo;
+    filters.search || filters.status || filters.slip_type;
 
   return (
     <div className="space-y-4">
-      {/* Search Input */}
+      {/* Search — note: BE cũng chưa support search, nhưng giữ UI để sau này thêm */}
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <Input
-          placeholder="Tìm theo số phiếu, tên tài sản..."
+          placeholder="Tìm theo số phiếu..."
           value={filters.search || ""}
           onChange={(e) => handleSearchChange(e.target.value)}
           className="pl-10"
@@ -54,36 +62,33 @@ export function SlipFilters({ filters, onFiltersChange }) {
 
       {/* Filter Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
-        {/* Status Filter */}
+        {/* SLIP-03: Status filter với values đúng */}
         <Select
           value={filters.status || ""}
           onChange={(e) => handleStatusChange(e.target.value)}
         >
           <option value="">Tất cả trạng thái</option>
-          {SLIP_STATUSES.map((status) => (
-            <option key={status.value} value={status.value}>
-              {status.label}
+          {SLIP_STATUSES.map((s) => (
+            <option key={s.value} value={s.value}>
+              {s.label}
             </option>
           ))}
         </Select>
 
-        {/* Date From */}
-        <Input
-          type="date"
-          placeholder="Từ ngày"
-          value={filters.dateFrom || ""}
-          onChange={(e) => handleDateFromChange(e.target.value)}
-        />
+        {/* Filter theo loại phiếu — BE hỗ trợ slip_type param */}
+        <Select
+          value={filters.slip_type || ""}
+          onChange={(e) => handleSlipTypeChange(e.target.value)}
+        >
+          <option value="">Tất cả loại phiếu</option>
+          {SLIP_TYPES.map((t) => (
+            <option key={t.value} value={t.value}>
+              {t.label}
+            </option>
+          ))}
+        </Select>
 
-        {/* Date To */}
-        <Input
-          type="date"
-          placeholder="Đến ngày"
-          value={filters.dateTo || ""}
-          onChange={(e) => handleDateToChange(e.target.value)}
-        />
-
-        {/* Reset Button */}
+        {/* Reset */}
         {hasActiveFilters && (
           <Button
             variant="outline"
