@@ -1,5 +1,6 @@
-// src/components/slips/SlipFileUpload.jsx
-// Module 1: File Upload & Template Download cho phiếu bàn giao
+// FIXED BUG-04: handleDownloadTemplate không check null data?.url
+// Nếu BE chưa setup bucket handover-templates → user thấy không có gì xảy ra
+// Fix: toast.error rõ ràng khi url null
 import { useState } from "react";
 import { FileUpload } from "@/components/common/FileUpload";
 import { Button } from "@/components/common/Button";
@@ -98,7 +99,6 @@ function FileRow({ file, onDelete, canDelete }) {
         </div>
       </div>
 
-      {/* Inline preview modal */}
       {previewing && (
         <div
           className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
@@ -175,11 +175,17 @@ export function SlipFileUpload({
     );
   };
 
+  // BUG-04 FIX: kiểm tra data?.url và toast lỗi rõ ràng
+  // Trước: nếu data null hoặc không có url → user không biết gì xảy ra
   const handleDownloadTemplate = () => {
     downloadTemplate(undefined, {
       onSuccess: (data) => {
         if (data?.url) {
           window.open(data.url, "_blank");
+        } else {
+          toast.error(
+            "File mẫu chưa được cấu hình. Vui lòng liên hệ IT Admin để upload file mẫu lên hệ thống.",
+          );
         }
       },
     });
@@ -190,7 +196,7 @@ export function SlipFileUpload({
 
   return (
     <div className="space-y-5">
-      {/* Template download section */}
+      {/* Template download */}
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <div className="flex items-start gap-3">
           <FileText className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />

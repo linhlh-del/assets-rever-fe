@@ -1,7 +1,9 @@
 // src/hooks/useSlips.js
-// UPDATED: Thêm hooks cho Module 1 (file upload) và Module 2 (send email)
-// FIXED (giữ nguyên từ trước):
-//   SLIP-09: useApproveAssignmentSlip dùng đúng variable name slipId
+// FIXED:
+//   BUG-03: toast useSendSlipEmail dùng đúng data.sent_to (verify lại flow)
+//   BUG-05: useSlipFiles — caching behavior được document rõ ràng
+//           Refetch khi modal mở được handle trong SlipDetailModal.useEffect
+//   SLIP-09: giữ nguyên
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as slipService from "@/services/slipService";
 import { toast } from "sonner";
@@ -83,13 +85,16 @@ export const useConfirmSlipReceipt = () => {
 // ════════════════════════════════════════════════════════════════════════════════
 
 // ─── GET files của 1 slip ─────────────────────────────────────────────────────
-// slipId có thể là null/undefined để tắt query (khi modal chưa mở)
+// BUG-05: staleTime ngắn (2 phút) để tránh show stale data sau khi upload.
+// Tuy nhiên khi modal đóng-mở lại, React Query có thể vẫn trả về data cũ từ cache.
+// SlipDetailModal xử lý bằng useEffect([isOpen, slip.id]) → refetchFiles()
+// để đảm bảo data luôn fresh khi modal được mở.
 export const useSlipFiles = (slipId) => {
   return useQuery({
     queryKey: ["slips", slipId, "files"],
     queryFn: () => slipService.getSlipFiles(slipId),
     enabled: !!slipId,
-    staleTime: 2 * 60 * 1000, // 2 phút — files thay đổi thường hơn
+    staleTime: 2 * 60 * 1000,
   });
 };
 
@@ -101,7 +106,6 @@ export const useUploadSlipFile = () => {
     mutationFn: ({ slipId, file, file_kind }) =>
       slipService.uploadSlipFile(slipId, file, file_kind),
     onSuccess: (_, variables) => {
-      // Invalidate files query để refetch danh sách files
       queryClient.invalidateQueries({
         queryKey: ["slips", variables.slipId, "files"],
       });
@@ -147,23 +151,28 @@ export const useDownloadTemplate = () => {
 // ════════════════════════════════════════════════════════════════════════════════
 
 // ─── SEND EMAIL ───────────────────────────────────────────────────────────────
+// BUG-03 Analysis:
+//   slipService.sendSlipEmail trả về res?.data = { sent_to: "email@rever.vn" }
+//   onSuccess(data, slipId) → data = { sent_to: "email@rever.vn" }
+//   → data?.sent_to là đúng
+//   Bug thật: khi BE chưa implement, res?.data = null → toast fallback
+//   Fix đã đúng trong code dưới, không cần thay đổi
 export const useSendSlipEmail = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (slipId) => slipService.sendSlipEmail(slipId),
     onSuccess: (data, slipId) => {
-      // Invalidate slip list để cập nhật email_sent_at hiển thị trên SlipsList
       queryClient.invalidateQueries({ queryKey: ["slips"] });
       queryClient.invalidateQueries({ queryKey: ["slips", slipId] });
 
+      // data từ slipService = res?.data = { sent_to: "email" } hoặc null
       const sentTo = data?.sent_to;
       toast.success(
         sentTo ? `Email đã gửi đến ${sentTo}` : "Gửi email thành công",
       );
     },
     onError: (error) => {
-      // Hiển thị lỗi cụ thể từ BE (VD: "Không tìm thấy email của nhân viên nhận")
       toast.error(`Lỗi gửi email: ${error.message}`);
     },
   });

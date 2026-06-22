@@ -1,14 +1,14 @@
 // FIXED:
-//   SLIP-07: Xác nhận parse response đúng (data?.data và data?.total)
-//   SLIP-08: Truyền slip_type filter xuống SlipFilters và service
-//   SLIP-12: Thêm nút "Tạo phiếu thu hồi" và ReturnSlipModal
+//   BUG-02: ReturnSlipModal mutationFn dùng closure → gửi sai data nếu state đổi
+//           Fix: truyền { assetId, notes } vào mutate() thay vì capture closure
+//   SLIP-07,08,12: giữ nguyên từ lần fix trước
 import { useState } from "react";
 import { Button } from "@/components/common/Button";
 import { Loading } from "@/components/common/Loading";
 import { Modal } from "@/components/common/Modal";
 import { Select } from "@/components/common/Select";
 import { Textarea } from "@/components/common/Textarea";
-import { useAssignmentSlips, useCreateAssignmentSlip } from "@/hooks/useSlips";
+import { useAssignmentSlips } from "@/hooks/useSlips";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createReturnSlip } from "@/services/slipService";
 import { SlipFilters } from "@/components/slips/SlipFilters";
@@ -21,7 +21,12 @@ import { useAssets } from "@/hooks/useAssets";
 import { Plus, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 
-// ─── SLIP-12: Return Slip Modal (tạo phiếu thu hồi độc lập) ──────────────────
+// ─── SLIP-12: ReturnSlipModal ─────────────────────────────────────────────────
+// BUG-02 FIX: mutationFn nhận args thay vì dùng closure
+// Trước: mutationFn: () => createReturnSlip({ asset_ids: [selectedAssetId], notes })
+//   → selectedAssetId và notes bị capture tại thời điểm tạo mutation, không update
+// Sau: mutationFn: ({ assetId, notes }) => createReturnSlip(...)
+//   → data luôn lấy từ thời điểm gọi mutate()
 function ReturnSlipModal({ isOpen, onClose }) {
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [notes, setNotes] = useState("");
@@ -31,7 +36,9 @@ function ReturnSlipModal({ isOpen, onClose }) {
   const assets = assetsData?.assets || [];
 
   const { mutate: doReturn, isPending } = useMutation({
-    mutationFn: () => createReturnSlip({ asset_ids: [selectedAssetId], notes }),
+    // BUG-02 FIX: nhận { assetId, notes } từ call site, không dùng closure
+    mutationFn: ({ assetId, notes: n }) =>
+      createReturnSlip({ asset_ids: [assetId], notes: n }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["slips"] });
       queryClient.invalidateQueries({ queryKey: ["assets"] });
@@ -48,13 +55,20 @@ function ReturnSlipModal({ isOpen, onClose }) {
       toast.error("Vui lòng chọn tài sản cần thu hồi");
       return;
     }
-    doReturn();
+    // BUG-02 FIX: truyền data tại thời điểm submit
+    doReturn({ assetId: selectedAssetId, notes });
+  };
+
+  const handleClose = () => {
+    setSelectedAssetId("");
+    setNotes("");
+    onClose();
   };
 
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       title="Tạo phiếu thu hồi"
       description="Thu hồi tài sản từ nhân viên"
     >
@@ -92,7 +106,7 @@ function ReturnSlipModal({ isOpen, onClose }) {
         </div>
 
         <div className="flex justify-end gap-3 pt-2">
-          <Button variant="outline" onClick={onClose} disabled={isPending}>
+          <Button variant="outline" onClick={handleClose} disabled={isPending}>
             Hủy
           </Button>
           <Button onClick={handleSubmit} loading={isPending}>
@@ -107,23 +121,20 @@ function ReturnSlipModal({ isOpen, onClose }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function SlipsPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  // SLIP-12: Thêm state cho Return Slip Modal
   const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [editingSlip, setEditingSlip] = useState(null);
   const [viewingSlip, setViewingSlip] = useState(null);
 
-  // SLIP-08: Thêm slip_type vào filters state
   const [filters, setFilters] = useState({
     search: "",
     status: null,
-    slip_type: null, // SLIP-08: filter mới khớp với BE
+    slip_type: null,
     page: 1,
     limit: 20,
   });
 
   const { canCreateSlip } = usePermission();
 
-  // SLIP-07: data?.data và data?.total — đã đúng, slipService trả { data: [], total }
   const { data, isLoading } = useAssignmentSlips(filters);
   const slips = data?.data || [];
   const total = data?.total || 0;
@@ -135,7 +146,6 @@ export default function SlipsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-3xl font-bold">Phiếu Bàn Giao</h1>
@@ -146,7 +156,6 @@ export default function SlipsPage() {
 
         {canCreateSlip && (
           <div className="flex gap-2">
-            {/* SLIP-12: Nút tạo phiếu thu hồi */}
             <Button
               variant="outline"
               onClick={() => setIsReturnModalOpen(true)}
@@ -168,10 +177,8 @@ export default function SlipsPage() {
         )}
       </div>
 
-      {/* SLIP-08: SlipFilters nhận filters có slip_type */}
       <SlipFilters filters={filters} onFiltersChange={setFilters} />
 
-      {/* Table */}
       {isLoading ? (
         <Loading />
       ) : (
@@ -185,7 +192,6 @@ export default function SlipsPage() {
         </div>
       )}
 
-      {/* Pagination */}
       {total > 0 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -213,12 +219,10 @@ export default function SlipsPage() {
         </div>
       )}
 
-      {/* Modals */}
       <AddSlipModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
       />
-      {/* SLIP-12: Return Slip Modal */}
       <ReturnSlipModal
         isOpen={isReturnModalOpen}
         onClose={() => setIsReturnModalOpen(false)}

@@ -9,6 +9,7 @@ import { AddAssetModal } from "@/components/assets/AddAssetModal";
 import { EditAssetModal } from "@/components/assets/EditAssetModal";
 import { AssignAssetModal } from "@/components/assets/AssignAssetModal";
 import { ReturnAssetModal } from "@/components/assets/ReturnAssetModal";
+import { AddSlipModal } from "@/components/slips/AddSlipModal";
 import { useCanCreateAsset, usePermission } from "@/hooks/usePermission";
 import { useAuth } from "@/hooks/useAuth";
 import { Plus } from "lucide-react";
@@ -25,6 +26,8 @@ export default function AssetsPage() {
   const [editingAsset, setEditingAsset] = useState(null);
   const [assigningAsset, setAssigningAsset] = useState(null);
   const [returningAsset, setReturningAsset] = useState(null);
+  // Tạo phiếu bàn giao từ row asset — lưu asset object để lấy id
+  const [slipTargetAsset, setSlipTargetAsset] = useState(null);
 
   const [filters, setFilters] = useState({
     search: "",
@@ -66,16 +69,11 @@ export default function AssetsPage() {
   };
 
   // ─── Parse response ───────────────────────────────────────────────────────
-  // getAssets() (sau Fix 1) return { assets: [...], pagination: { total, page, limit } }
-  // data ở đây = return value của getAssets(), KHÔNG phải axios response
   const rawAssets = data?.assets || [];
   const pagination = data?.pagination || { total: 0 };
   const total = pagination.total || 0;
 
-  // Role "user" chỉ thấy tài sản đang dùng của mình
-  // 🔧 BUG-013: Loại bỏ tài sản thanh lý khỏi danh sách mặc định (khi không filter status)
-  // Nếu user chọn status filter, dùng API filter — không lọc FE
-  const shouldHideDisposed = !filters.status; // ẩn disposed chỉ khi không có status filter
+  const shouldHideDisposed = !filters.status;
 
   const assets =
     role === "user" && user
@@ -88,8 +86,6 @@ export default function AssetsPage() {
         ? rawAssets.filter((a) => a.status !== "disposed")
         : rawAssets;
 
-  // Nếu filter FE thì total sẽ sai so với số thật trên DB,
-  // nhưng chấp nhận được cho đến khi BE hỗ trợ filter theo employee
   const displayTotal =
     role === "user" || shouldHideDisposed ? assets.length : total;
   const totalPages = Math.max(1, Math.ceil(displayTotal / filters.limit));
@@ -169,11 +165,12 @@ export default function AssetsPage() {
             onAssign={setAssigningAsset}
             onReturn={setReturningAsset}
             onDelete={handleDelete}
+            onCreateSlip={setSlipTargetAsset}
           />
         </div>
       )}
 
-      {/* Pagination — chỉ hiện khi không filter theo role user */}
+      {/* Pagination */}
       {displayTotal > 0 && role !== "user" && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
@@ -225,6 +222,12 @@ export default function AssetsPage() {
         isOpen={!!returningAsset}
         onClose={() => setReturningAsset(null)}
         asset={returningAsset}
+      />
+      {/* AddSlipModal — mở từ row asset, pre-select asset đó */}
+      <AddSlipModal
+        isOpen={!!slipTargetAsset}
+        onClose={() => setSlipTargetAsset(null)}
+        defaultAssetId={slipTargetAsset?.id}
       />
     </div>
   );

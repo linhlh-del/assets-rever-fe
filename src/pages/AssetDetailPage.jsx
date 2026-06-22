@@ -10,6 +10,7 @@ import { AssignAssetModal } from "@/components/assets/AssignAssetModal";
 import { ReturnAssetModal } from "@/components/assets/ReturnAssetModal";
 import { DisposalAssetModal } from "@/components/assets/DisposalAssetModal";
 import { RichTextDisplay } from "@/components/common/RichTextDisplay";
+import { AddSlipModal } from "@/components/slips/AddSlipModal";
 import { useAsset, useAssetAuditTrail } from "@/hooks/useAssets";
 import { usePermission } from "@/hooks/usePermission";
 import { formatVND } from "@/utils/formatters";
@@ -20,6 +21,7 @@ import {
   RotateCcw,
   AlertTriangle,
   Trash2,
+  ClipboardList,
 } from "lucide-react";
 
 const statusColors = {
@@ -41,12 +43,14 @@ const statusLabels = {
 export default function AssetDetailPage() {
   const { assetId } = useParams();
   const navigate = useNavigate();
-  const { canEditAsset, canAssignAsset, canDisposeAsset } = usePermission();
+  const { canEditAsset, canAssignAsset, canDisposeAsset, canCreateSlip } =
+    usePermission();
 
   const [editingAsset, setEditingAsset] = useState(null);
   const [assigningAsset, setAssigningAsset] = useState(null);
   const [returningAsset, setReturningAsset] = useState(null);
   const [disposingAsset, setDisposingAsset] = useState(null);
+  const [isAddSlipOpen, setIsAddSlipOpen] = useState(false);
 
   const { data: asset, isLoading } = useAsset(assetId);
   const { data: auditTrail } = useAssetAuditTrail(assetId);
@@ -161,12 +165,6 @@ export default function AssetDetailPage() {
             </Card>
           )}
 
-          {/* Notes — hiển thị HTML đã lưu (xuống dòng + bullet/numbered
-              list, BUG-015) qua RichTextDisplay. Component này sanitize
-              bằng DOMPurify rồi render bằng dangerouslySetInnerHTML, khác
-              với <p>{asset.notes}</p> trước đây vốn chỉ in ra chuỗi HTML
-              thô dạng text (React tự escape mọi string trong JSX) thay vì
-              hiển thị đúng định dạng. */}
           {asset.notes && (
             <Card>
               <h3 className="font-semibold mb-2">Ghi chú</h3>
@@ -270,6 +268,18 @@ export default function AssetDetailPage() {
                 </Button>
               )}
 
+              {/* Tạo phiếu bàn giao — chỉ khi available và có quyền */}
+              {canCreateSlip && asset.status === "available" && (
+                <Button
+                  variant="outline"
+                  className="w-full flex items-center gap-2"
+                  onClick={() => setIsAddSlipOpen(true)}
+                >
+                  <ClipboardList className="w-4 h-4" />
+                  Tạo phiếu bàn giao
+                </Button>
+              )}
+
               {canDisposeAsset && asset.status !== "disposed" && (
                 <Button
                   variant="danger"
@@ -350,6 +360,12 @@ export default function AssetDetailPage() {
         isOpen={!!disposingAsset}
         onClose={() => setDisposingAsset(null)}
         asset={disposingAsset}
+      />
+      {/* AddSlipModal — pre-select asset hiện tại */}
+      <AddSlipModal
+        isOpen={isAddSlipOpen}
+        onClose={() => setIsAddSlipOpen(false)}
+        defaultAssetId={asset.id}
       />
     </div>
   );

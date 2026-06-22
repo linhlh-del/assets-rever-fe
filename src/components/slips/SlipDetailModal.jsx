@@ -1,5 +1,7 @@
-// src/components/slips/SlipDetailModal.jsx
-// UPDATED: Thêm section file upload (Module 1) + nút gửi email (Module 2)
+// FIXED:
+//   BUG-05: Thêm useEffect để refetch files khi modal mở lại — tránh show data cũ
+//   BUG-07: onUploadSuccess dùng async wrapper cho refetchFiles
+//   SLIP-02,03: giữ nguyên field name fixes
 import { Modal } from "@/components/common/Modal";
 import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
@@ -7,8 +9,9 @@ import { SlipFileUpload } from "./SlipFileUpload";
 import { useSlipFiles, useSendSlipEmail } from "@/hooks/useSlips";
 import { usePermission } from "@/hooks/usePermission";
 import { Mail, CheckCircle } from "lucide-react";
+import { useEffect } from "react";
 
-// SLIP-03: Đúng theo schema BE: draft | generated | signed
+// SLIP-03: status schema đúng
 const statusColors = {
   draft: "secondary",
   generated: "default",
@@ -31,13 +34,19 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
   const { role } = usePermission();
   const canManage = ["super_admin", "it_admin"].includes(role);
 
-  // Lấy files của slip
   const { data: filesData, refetch: refetchFiles } = useSlipFiles(
     isOpen && slip?.id ? slip.id : null,
   );
   const files = filesData?.files || [];
 
-  // Email mutation
+  // BUG-05 FIX: refetch khi modal mở lại để không show stale data
+  // (useQuery cache giữ data cũ, cần explicit refetch khi re-open)
+  useEffect(() => {
+    if (isOpen && slip?.id) {
+      refetchFiles();
+    }
+  }, [isOpen, slip?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const { mutate: sendEmail, isPending: isSending } = useSendSlipEmail();
 
   if (!slip) return null;
@@ -49,6 +58,11 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
     sendEmail(slip.id);
   };
 
+  // BUG-07 FIX: refetchFiles returns Promise, wrap để xử lý đúng
+  const handleUploadSuccess = async () => {
+    await refetchFiles();
+  };
+
   return (
     <Modal
       isOpen={isOpen}
@@ -57,7 +71,7 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
       size="md"
     >
       <div className="space-y-6 pb-2">
-        {/* ── Trạng thái ── */}
+        {/* Trạng thái */}
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Trạng thái</span>
           <Badge variant={statusColors[slip.status]}>
@@ -65,7 +79,7 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
           </Badge>
         </div>
 
-        {/* ── Thông tin cơ bản ── */}
+        {/* Thông tin cơ bản */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <p className="text-xs text-muted-foreground">Số phiếu</p>
@@ -130,7 +144,7 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
           </div>
         </div>
 
-        {/* ── Danh sách tài sản ── */}
+        {/* Danh sách tài sản */}
         {slip.items && slip.items.length > 0 && (
           <div>
             <h4 className="text-sm font-semibold mb-2">
@@ -158,7 +172,7 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
           </div>
         )}
 
-        {/* ── Ghi chú ── */}
+        {/* Ghi chú */}
         {slip.notes && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Ghi chú</p>
@@ -166,10 +180,9 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
           </div>
         )}
 
-        {/* ── Divider ── */}
         <div className="border-t" />
 
-        {/* ── MODULE 1: File section ── */}
+        {/* MODULE 1: File section */}
         <div>
           <h4 className="text-sm font-semibold mb-3 flex items-center gap-2">
             📄 File phiếu bàn giao
@@ -182,29 +195,27 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
           <SlipFileUpload
             slipId={slip.id}
             files={files}
-            onUploadSuccess={refetchFiles}
+            onUploadSuccess={handleUploadSuccess}
             canManage={canManage}
           />
         </div>
 
-        {/* ── Divider ── */}
         <div className="border-t" />
 
-        {/* ── MODULE 2: Action bar ── */}
+        {/* MODULE 2: Action bar */}
         <div className="flex items-center justify-between gap-3">
-          {/* Email status indicator */}
-          {emailSentAt && (
+          {emailSentAt ? (
             <div className="flex items-center gap-1.5 text-xs text-green-700">
               <CheckCircle className="w-3.5 h-3.5" />
               <span>
                 Đã gửi {new Date(emailSentAt).toLocaleDateString("vi-VN")}
               </span>
             </div>
+          ) : (
+            <div />
           )}
-          {!emailSentAt && <div />}
 
           <div className="flex items-center gap-2">
-            {/* Nút gửi email — chỉ hiển thị với phiếu bàn giao */}
             {isHandover && canManage && (
               <Button
                 variant="outline"
@@ -224,8 +235,6 @@ export function SlipDetailModal({ isOpen, onClose, slip }) {
             </Button>
           </div>
         </div>
-
-        {/* NOTE: approved_date đã bị XÓA — field này không tồn tại trong schema BE */}
       </div>
     </Modal>
   );

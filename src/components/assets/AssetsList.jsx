@@ -2,7 +2,14 @@ import { Badge } from "@/components/common/Badge";
 import { Button } from "@/components/common/Button";
 import { usePermission } from "@/hooks/usePermission";
 import { formatVND } from "@/utils/formatters";
-import { Edit2, Eye, Send, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Edit2,
+  Eye,
+  Send,
+  RotateCcw,
+  Trash2,
+  ClipboardList,
+} from "lucide-react";
 
 const statusLabels = {
   available: "Khả dụng",
@@ -28,8 +35,9 @@ export function AssetsList({
   onAssign,
   onReturn,
   onDelete,
+  onCreateSlip, // (asset) => void — mở AddSlipModal với asset pre-selected
 }) {
-  const { role, canDeleteAsset } = usePermission();
+  const { role, canDeleteAsset, canCreateSlip } = usePermission();
   const isRegularUser = role === "user";
 
   if (isLoading) {
@@ -57,17 +65,15 @@ export function AssetsList({
             <th className="px-4 py-3 text-left text-sm font-semibold w-32">
               Trạng thái
             </th>
-            {/* ✅ FIX 2: Cột "Người sử dụng" dùng đúng field */}
             <th className="px-4 py-3 text-left text-sm font-semibold w-36">
               Người sử dụng
             </th>
-            {/* Giá chỉ hiện với admin/dev */}
             {!isRegularUser && (
               <th className="px-4 py-3 text-left text-sm font-semibold w-32">
                 Giá (VNĐ)
               </th>
             )}
-            <th className="px-4 py-3 text-left text-sm font-semibold w-40">
+            <th className="px-4 py-3 text-left text-sm font-semibold w-44">
               Hành động
             </th>
           </tr>
@@ -103,7 +109,7 @@ export function AssetsList({
                 </Badge>
               </td>
 
-              {/* ✅ Người sử dụng — dùng current_user_employee_code */}
+              {/* Người sử dụng */}
               <td className="px-4 py-3 text-sm">
                 {asset.current_user_employee_code ? (
                   <span className="font-medium">
@@ -124,6 +130,7 @@ export function AssetsList({
               {/* Hành động */}
               <td className="px-4 py-3 text-sm">
                 <div className="flex gap-1">
+                  {/* Xem chi tiết */}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -165,6 +172,21 @@ export function AssetsList({
                       <RotateCcw className="w-4 h-4" />
                     </Button>
                   )}
+
+                  {/* Tạo phiếu bàn giao — chỉ khi available + có quyền */}
+                  {asset.status === "available" &&
+                    canCreateSlip &&
+                    onCreateSlip && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onCreateSlip(asset)}
+                        title="Tạo phiếu bàn giao"
+                        className="text-blue-500 hover:text-blue-700"
+                      >
+                        <ClipboardList className="w-4 h-4" />
+                      </Button>
+                    )}
 
                   {canDeleteAsset && asset.status === "available" && (
                     <Button
